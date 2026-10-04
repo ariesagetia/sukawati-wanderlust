@@ -132,7 +132,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
       }
       const { id, ...rest } = f as Destination;
       const row = { ...rest, slug: f.slug || slugify(f.name ?? ""), photo_url, updated_at: new Date().toISOString() };
-      delete (row as Record<string, unknown>).created_at;
+      delete (row as Record<string, unknown>)["created_at"];
       const res = id ? await supabase.from("destinations").update(row).eq("id", id) : await supabase.from("destinations").insert(row);
       if (res.error) throw res.error;
       onSaved();

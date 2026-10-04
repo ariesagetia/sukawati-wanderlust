@@ -37,7 +37,7 @@ function Index() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className="text-4xl font-semibold">Jelajahi Sukawati</h2>
           <div className="flex flex-wrap gap-2">
-            {[...Object.entries(GROUPS), ["all", "Semua"]].map(([k, v]) => (
+            {[...Object.entries(GROUPS), ["all", "Semua"] as [string, string]].map(([k, v]) => (
               <button key={k} onClick={() => setGroup(k)}
                 className={`rounded-full border px-4 py-1.5 text-sm transition ${group === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}>
                 {v}
