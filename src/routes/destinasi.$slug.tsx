@@ -24,7 +24,7 @@ function Detail() {
 
   return (
     <SiteChrome>
-      <div className="mx-auto max-w-5xl px-5 py-12">
+      <div className="mx-auto max-w-5xl px-5 py-12 pt-24">
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">← Kembali</Link>
         {isLoading && <p className="mt-8">Memuat...</p>}
         {!isLoading && !d && <p className="mt-8">Destinasi tidak ditemukan.</p>}

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
-import { supabase, fetchDestinations, GROUPS, type Destination } from "@/lib/supabase";
+import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -39,7 +39,7 @@ function AdminPage() {
 
   return (
     <SiteChrome>
-      <div className="mx-auto max-w-6xl px-5 py-12">
+      <div className="mx-auto max-w-6xl px-5 py-12 pt-24">
         {!session ? <Login /> : isAdmin === null ? <p>Memeriksa akses...</p> : !isAdmin ? (
           <div><p>Akun ini bukan admin.</p><button className={`${btn} mt-4`} onClick={() => supabase.auth.signOut()}>Keluar</button></div>
         ) : <Dashboard email={session.user.email ?? ""} />}
@@ -77,6 +77,7 @@ function Dashboard({ email }: { email: string }) {
   const qc = useQueryClient();
   const { data = [] } = useQuery({ queryKey: ["admin-destinations"], queryFn: () => fetchDestinations(true) });
   const [editing, setEditing] = useState<Partial<Destination> | null>(null);
+  const [tab, setTab] = useState("destinasi");
 
   async function remove(d: Destination) {
     if (!confirm(`Hapus "${d.name}"?`)) return;
@@ -88,28 +89,110 @@ function Dashboard({ email }: { email: string }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div><h1 className="text-4xl font-semibold">Kelola Destinasi</h1><p className="text-sm text-muted-foreground">{email}</p></div>
+        <div><h1 className="text-4xl font-semibold">Dashboard Admin</h1><p className="text-sm text-muted-foreground">{email}</p></div>
         <div className="flex gap-2">
-          <button className={btn} onClick={() => setEditing({ ...empty })}>+ Tambah</button>
           <button className="rounded-sm border border-border px-4 py-2 text-sm" onClick={() => supabase.auth.signOut()}>Keluar</button>
         </div>
       </div>
 
-      {editing && <Editor value={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); qc.invalidateQueries(); }} />}
-
-      <div className="mt-8 divide-y divide-border rounded-sm border border-border bg-card">
-        {data.map((d) => (
-          <div key={d.id} className="flex items-center gap-4 p-4">
-            <div className="h-14 w-20 shrink-0 overflow-hidden rounded-sm bg-muted">{d.photo_url && <img src={d.photo_url} alt="" className="h-full w-full object-cover" />}</div>
-            <div className="flex-1">
-              <p className="font-medium">{d.name} {!d.is_published && <span className="ml-2 text-xs text-muted-foreground">(draf)</span>}</p>
-              <p className="text-xs text-muted-foreground">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</p>
-            </div>
-            <button className="text-sm text-primary" onClick={() => setEditing(d)}>Ubah</button>
-            <button className="text-sm text-destructive" onClick={() => remove(d)}>Hapus</button>
-          </div>
-        ))}
+      <div className="mt-6 flex gap-4 border-b border-border">
+        <button className={`pb-2 px-2 text-sm font-medium ${tab === "destinasi" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`} onClick={() => setTab("destinasi")}>Destinasi</button>
+        <button className={`pb-2 px-2 text-sm font-medium ${tab === "pengaturan" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`} onClick={() => setTab("pengaturan")}>Pengaturan</button>
       </div>
+
+      {tab === "destinasi" && (
+        <div className="mt-8">
+          <div className="flex justify-end mb-4">
+            <button className={btn} onClick={() => setEditing({ ...empty })}>+ Tambah</button>
+          </div>
+          <div className="divide-y divide-border rounded-sm border border-border bg-card">
+            {data.map((d) => (
+              <div key={d.id} className="flex items-center gap-4 p-4">
+                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-sm bg-muted">{d.photo_url && <img src={d.photo_url} alt="" className="h-full w-full object-cover" />}</div>
+                <div className="flex-1">
+                  <p className="font-medium">{d.name} {!d.is_published && <span className="ml-2 text-xs text-muted-foreground">(draf)</span>}</p>
+                  <p className="text-xs text-muted-foreground">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</p>
+                </div>
+                <button className="text-sm text-primary" onClick={() => setEditing(d)}>Ubah</button>
+                <button className="text-sm text-destructive" onClick={() => remove(d)}>Hapus</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === "pengaturan" && <SettingsPanel />}
+
+      {editing && <Editor value={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); qc.invalidateQueries(); }} />}
+    </div>
+  );
+}
+
+function SettingsPanel() {
+  const { data: whatsapp, isLoading: isLoadingWa, refetch: refetchWa } = useQuery({ queryKey: ["setting", "whatsapp"], queryFn: () => fetchSetting("whatsapp") });
+  const { data: emailSetting, isLoading: isLoadingEmail, refetch: refetchEmail } = useQuery({ queryKey: ["setting", "email"], queryFn: () => fetchSetting("email") });
+  const { data: heroImageSetting, isLoading: isLoadingHero, refetch: refetchHero } = useQuery({ queryKey: ["setting", "hero_image"], queryFn: () => fetchSetting("hero_image") });
+  
+  const [wa, setWa] = useState("");
+  const [email, setEmail] = useState("");
+  const [heroImage, setHeroImage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (whatsapp) setWa(whatsapp);
+  }, [whatsapp]);
+
+  useEffect(() => {
+    if (emailSetting) setEmail(emailSetting);
+  }, [emailSetting]);
+
+  useEffect(() => {
+    if (heroImageSetting) setHeroImage(heroImageSetting);
+  }, [heroImageSetting]);
+
+  async function save() {
+    setBusy(true);
+    const { error: err1 } = await supabase.from("settings").upsert({ key: "whatsapp", value: wa }, { onConflict: "key" });
+    const { error: err2 } = await supabase.from("settings").upsert({ key: "email", value: email }, { onConflict: "key" });
+    const { error: err3 } = await supabase.from("settings").upsert({ key: "hero_image", value: heroImage }, { onConflict: "key" });
+    
+    setBusy(false);
+    if (err1 || err2 || err3) {
+      alert("Gagal menyimpan. Pastikan tabel 'settings' sudah dibuat (kolom: key, value). Error: " + (err1?.message || err2?.message || err3?.message));
+    } else {
+      alert("Tersimpan!");
+      refetchWa();
+      refetchEmail();
+      refetchHero();
+    }
+  }
+
+  if (isLoadingWa || isLoadingEmail || isLoadingHero) return <p className="mt-8 text-muted-foreground">Memuat pengaturan...</p>;
+
+  return (
+    <div className="mt-8 max-w-md space-y-4 rounded-sm border border-border bg-card p-6">
+       <h2 className="text-2xl font-semibold">Pengaturan Website</h2>
+       
+       <label className="block text-sm">
+         <span className="text-muted-foreground">Nomor WhatsApp (Cth: +62 812-3456-7890)</span>
+         <input className={`${input} mt-1`} value={wa} onChange={e => setWa(e.target.value)} placeholder="+62 812-3456-7890" />
+       </label>
+       
+       <label className="block text-sm">
+         <span className="text-muted-foreground">Alamat Email</span>
+         <input className={`${input} mt-1`} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="info@sukawatihub.com" />
+       </label>
+       
+       <label className="block text-sm">
+         <span className="text-muted-foreground">URL Foto Header (Maks: 2MB)</span>
+         <input className={`${input} mt-1`} type="url" value={heroImage} onChange={e => setHeroImage(e.target.value)} placeholder="https://..." />
+       </label>
+       
+       <button className={btn} onClick={save} disabled={busy}>{busy ? "Menyimpan..." : "Simpan"}</button>
+       
+       <p className="text-xs text-muted-foreground mt-4">
+         Catatan: Jika gagal disimpan, pastikan Anda telah membuat tabel <code>settings</code> di Supabase dengan kolom <code>key</code> (text, primary key) dan <code>value</code> (text).
+       </p>
     </div>
   );
 }

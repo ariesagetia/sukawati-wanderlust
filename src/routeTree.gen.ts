@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DestinasiIndexRouteImport } from './routes/destinasi.index'
 import { Route as DestinasiSlugRouteImport } from './routes/destinasi.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DestinasiIndexRoute = DestinasiIndexRouteImport.update({
+  id: '/destinasi/',
+  path: '/destinasi/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DestinasiSlugRoute = DestinasiSlugRouteImport.update({
   id: '/destinasi/$slug',
   path: '/destinasi/$slug',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/destinasi/$slug': typeof DestinasiSlugRoute
+  '/destinasi/': typeof DestinasiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/destinasi/$slug': typeof DestinasiSlugRoute
+  '/destinasi': typeof DestinasiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/destinasi/$slug': typeof DestinasiSlugRoute
+  '/destinasi/': typeof DestinasiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/destinasi/$slug'
+  fullPaths: '/' | '/admin' | '/destinasi/$slug' | '/destinasi/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/destinasi/$slug'
-  id: '__root__' | '/' | '/admin' | '/destinasi/$slug'
+  to: '/' | '/admin' | '/destinasi/$slug' | '/destinasi'
+  id: '__root__' | '/' | '/admin' | '/destinasi/$slug' | '/destinasi/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   DestinasiSlugRoute: typeof DestinasiSlugRoute
+  DestinasiIndexRoute: typeof DestinasiIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/destinasi/': {
+      id: '/destinasi/'
+      path: '/destinasi'
+      fullPath: '/destinasi/'
+      preLoaderRoute: typeof DestinasiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/destinasi/$slug': {
       id: '/destinasi/$slug'
       path: '/destinasi/$slug'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   DestinasiSlugRoute: DestinasiSlugRoute,
+  DestinasiIndexRoute: DestinasiIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

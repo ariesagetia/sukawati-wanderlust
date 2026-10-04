@@ -31,6 +31,7 @@ export const GROUPS: Record<string, string> = {
   seni: "Seni & Budaya",
   kerajinan: "Kerajinan",
   kuliner: "Kuliner",
+  festival: "Event & Festival",
 };
 
 export async function fetchDestinations(all = false) {
@@ -45,4 +46,13 @@ export async function fetchDestination(slug: string) {
   const { data, error } = await supabase.from("destinations").select("*").eq("slug", slug).maybeSingle();
   if (error) throw error;
   return data as Destination | null;
+}
+
+export async function fetchSetting(key: string) {
+  const { data, error } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
+  if (error) {
+    console.warn("Setting table might not exist yet:", error.message);
+    return null;
+  }
+  return data?.value as string | null;
 }
