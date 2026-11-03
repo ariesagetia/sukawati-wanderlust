@@ -15,21 +15,57 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+    <div className="relative flex min-h-screen items-center justify-center bg-white px-4 overflow-hidden">
+      {/* Dekorasi lingkaran background */}
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-emerald-50" />
+      <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-emerald-100 opacity-60" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-emerald-100" />
+
+      <div className="relative z-10 max-w-lg text-center">
+        {/* Angka 404 dekoratif besar */}
+        <p
+          className="text-[10rem] leading-none font-bold select-none"
+          style={{ fontFamily: "var(--font-display)", color: "rgba(5,150,105,0.08)" }}
+        >
+          404
         </p>
-        <div className="mt-6">
+
+        {/* Icon */}
+        <div className="-mt-12 mb-6 flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200">
+            <span className="text-3xl">🌴</span>
+          </div>
+        </div>
+
+        <h1
+          className="text-3xl font-bold text-neutral-800"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Halaman Tidak Ditemukan
+        </h1>
+        <p className="mt-3 text-neutral-500 text-base leading-relaxed">
+          Maaf, halaman yang kamu cari tidak ada atau sudah dipindahkan.<br />
+          Yuk kembali dan jelajahi destinasi wisata Sukawati!
+        </p>
+
+        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-md shadow-emerald-200"
           >
-            Go home
+            🏠 Kembali ke Beranda
+          </Link>
+          <Link
+            to="/destinasi"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-6 py-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+          >
+            🗺️ Lihat Destinasi
           </Link>
         </div>
+
+        <p className="mt-10 text-xs text-neutral-400">
+          Sukawati Hub · Desa Sukawati, Gianyar, Bali
+        </p>
       </div>
     </div>
   );
@@ -43,29 +79,36 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+    <div className="relative flex min-h-screen items-center justify-center bg-white px-4 overflow-hidden">
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-red-50" />
+      <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-orange-50 opacity-60" />
+
+      <div className="relative z-10 max-w-md text-center">
+        <div className="mb-6 flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-200">
+            <span className="text-3xl">⚠️</span>
+          </div>
+        </div>
+
+        <h1 className="text-2xl font-bold text-neutral-800" style={{ fontFamily: "var(--font-display)" }}>
+          Halaman Gagal Dimuat
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <p className="mt-3 text-neutral-500 text-sm leading-relaxed">
+          Terjadi kesalahan pada server. Silakan coba refresh halaman atau kembali ke beranda.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            onClick={() => { router.invalidate(); reset(); }}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-md shadow-emerald-200"
           >
-            Try again
+            🔄 Coba Lagi
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
           >
-            Go home
+            🏠 Ke Beranda
           </a>
         </div>
       </div>
