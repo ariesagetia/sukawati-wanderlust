@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
 import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination } from "@/lib/supabase";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -19,8 +20,10 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-const input = "w-full rounded-sm border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
-const btn = "rounded-sm bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50";
+const input = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors";
+const btn = "rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer";
+
+const SUPER_ADMIN_EMAIL = "ariesagetia@gmail.com";
 
 function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -34,15 +37,36 @@ function AdminPage() {
 
   useEffect(() => {
     if (!session) return setIsAdmin(null);
-    supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }).then(({ data }) => setIsAdmin(!!data));
+    supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }).then(({ data }) => {
+      // Jika ariesagetia@gmail.com, selalu beri akses admin
+      if (session.user.email?.toLowerCase().trim() === SUPER_ADMIN_EMAIL) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(!!data);
+      }
+    });
   }, [session]);
 
   return (
     <SiteChrome>
-      <div className="mx-auto max-w-6xl px-5 py-12 pt-24">
-        {!session ? <Login /> : isAdmin === null ? <p>Memeriksa akses...</p> : !isAdmin ? (
-          <div><p>Akun ini bukan admin.</p><button className={`${btn} mt-4`} onClick={() => supabase.auth.signOut()}>Keluar</button></div>
-        ) : <Dashboard email={session.user.email ?? ""} />}
+      <div className="mx-auto max-w-6xl px-5 py-12 pt-28">
+        {!session ? (
+          <Login />
+        ) : isAdmin === null ? (
+          <div className="flex items-center justify-center py-20 text-neutral-500 gap-2">
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
+            <span>Memeriksa hak akses admin...</span>
+          </div>
+        ) : !isAdmin ? (
+          <div className="max-w-md mx-auto text-center py-16 bg-card border border-border rounded-xl p-8">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-3" />
+            <h2 className="text-xl font-bold text-neutral-900 mb-2">Akses Terbatas</h2>
+            <p className="text-sm text-neutral-600 mb-6">Akun ({session.user.email}) belum terdaftar sebagai admin.</p>
+            <button className={btn} onClick={() => supabase.auth.signOut()}>Keluar</button>
+          </div>
+        ) : (
+          <Dashboard email={session.user.email ?? ""} />
+        )}
       </div>
     </SiteChrome>
   );
@@ -52,20 +76,73 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+
   async function submit(e: FormEvent) {
-    e.preventDefault(); setBusy(true); setErr("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setErr("Email atau kata sandi salah.");
+    e.preventDefault(); setBusy(true); setErr(""); setMsg("");
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) setErr("Email atau kata sandi salah. Silakan coba lagi.");
     setBusy(false);
   }
+
+  async function handleForgot(e: FormEvent) {
+    e.preventDefault(); setBusy(true); setErr(""); setMsg("");
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+      redirectTo: typeof window !== "undefined" ? window.location.origin + "/admin" : undefined,
+    });
+    setBusy(false);
+    if (error) {
+      setErr(error.message);
+    } else {
+      setMsg("Tautan reset kata sandi berhasil dikirim ke " + forgotEmail + ". Silakan periksa kotak masuk atau spam email Anda.");
+    }
+  }
+
+  if (showForgot) {
+    return (
+      <form onSubmit={handleForgot} className="mx-auto max-w-sm space-y-4 rounded-xl border border-border bg-card p-8 shadow-sm">
+        <div className="flex items-center gap-2 text-emerald-700">
+          <KeyRound className="w-6 h-6" />
+          <h1 className="text-2xl font-semibold">Reset Kata Sandi</h1>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Masukkan alamat email Anda yang terdaftar sebagai admin. Kami akan mengirimkan tautan untuk membuat kata sandi baru.
+        </p>
+        <input className={input} type="email" placeholder="contoh@gmail.com" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required />
+        {err && <p className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-md">{err}</p>}
+        {msg && <p className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-md border border-emerald-200">{msg}</p>}
+        <button className={`${btn} w-full`} disabled={busy}>{busy ? "Mengirim..." : "Kirim Tautan Pemulihan"}</button>
+        <button type="button" className="w-full text-center text-xs text-muted-foreground hover:text-foreground mt-2 cursor-pointer" onClick={() => { setShowForgot(false); setErr(""); setMsg(""); }}>
+          ← Kembali ke halaman Masuk
+        </button>
+      </form>
+    );
+  }
+
   return (
-    <form onSubmit={submit} className="mx-auto max-w-sm space-y-4 rounded-sm border border-border bg-card p-8">
-      <h1 className="text-3xl font-semibold">Masuk Admin</h1>
-      <input className={input} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <input className={input} type="password" placeholder="Kata sandi" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      {err && <p className="text-sm text-destructive">{err}</p>}
+    <form onSubmit={submit} className="mx-auto max-w-sm space-y-4 rounded-xl border border-border bg-card p-8 shadow-sm">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Masuk Admin</h1>
+        <p className="text-xs text-muted-foreground mt-1">Sukawati Hub · Portal Pengelola</p>
+      </div>
+      <label className="block text-xs font-medium text-neutral-700">
+        Email
+        <input className={`${input} mt-1`} type="email" placeholder="admin@sukawatihub.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      </label>
+      <label className="block text-xs font-medium text-neutral-700">
+        Kata Sandi
+        <input className={`${input} mt-1`} type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+      </label>
+      {err && <p className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-md">{err}</p>}
       <button className={`${btn} w-full`} disabled={busy}>{busy ? "Memproses..." : "Masuk"}</button>
+      <div className="text-center pt-2">
+        <button type="button" className="text-xs text-muted-foreground hover:text-emerald-700 transition-colors cursor-pointer" onClick={() => { setShowForgot(true); setForgotEmail(email); }}>
+          Lupa kata sandi?
+        </button>
+      </div>
     </form>
   );
 }
@@ -79,6 +156,8 @@ function Dashboard({ email }: { email: string }) {
   const [editing, setEditing] = useState<Partial<Destination> | null>(null);
   const [tab, setTab] = useState("destinasi");
 
+  const isSuperAdmin = email.toLowerCase().trim() === SUPER_ADMIN_EMAIL;
+
   async function remove(d: Destination) {
     if (!confirm(`Hapus "${d.name}"?`)) return;
     const { error } = await supabase.from("destinations").delete().eq("id", d.id);
@@ -88,42 +167,661 @@ function Dashboard({ email }: { email: string }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div><h1 className="text-4xl font-semibold">Dashboard Admin</h1><p className="text-sm text-muted-foreground">{email}</p></div>
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-border">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900">Dashboard Pengelola</h1>
+            {isSuperAdmin && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 border border-emerald-300">
+                <Shield className="w-3.5 h-3.5" /> Super Admin
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">{email}</p>
+        </div>
         <div className="flex gap-2">
-          <button className="rounded-sm border border-border px-4 py-2 text-sm" onClick={() => supabase.auth.signOut()}>Keluar</button>
+          <button className="rounded-md border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 font-medium transition-colors cursor-pointer" onClick={() => supabase.auth.signOut()}>
+            Keluar
+          </button>
         </div>
       </div>
 
-      <div className="mt-6 flex gap-4 border-b border-border">
-        <button className={`pb-2 px-2 text-sm font-medium ${tab === "destinasi" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`} onClick={() => setTab("destinasi")}>Destinasi</button>
-        <button className={`pb-2 px-2 text-sm font-medium ${tab === "pengaturan" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`} onClick={() => setTab("pengaturan")}>Pengaturan</button>
+      {/* Tabs */}
+      <div className="mt-6 flex flex-wrap gap-2 border-b border-border">
+        <button
+          className={`pb-3 px-4 text-sm font-semibold transition-colors cursor-pointer ${
+            tab === "destinasi" ? "border-b-2 border-emerald-600 text-emerald-700" : "text-neutral-500 hover:text-neutral-900"
+          }`}
+          onClick={() => setTab("destinasi")}
+        >
+          Destinasi & Konten
+        </button>
+
+        <button
+          className={`pb-3 px-4 text-sm font-semibold transition-colors cursor-pointer ${
+            tab === "pengaturan" ? "border-b-2 border-emerald-600 text-emerald-700" : "text-neutral-500 hover:text-neutral-900"
+          }`}
+          onClick={() => setTab("pengaturan")}
+        >
+          Pengaturan Kontak & Banner
+        </button>
+
+        {isSuperAdmin && (
+          <button
+            className={`pb-3 px-4 text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+              tab === "kelola-admin" ? "border-b-2 border-emerald-600 text-emerald-700" : "text-neutral-500 hover:text-neutral-900"
+            }`}
+            onClick={() => setTab("kelola-admin")}
+          >
+            <Shield className="w-4 h-4 text-emerald-600" />
+            <span>Kelola Admin & Kata Sandi</span>
+            <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full">Khusus</span>
+          </button>
+        )}
       </div>
 
+      {/* Konten Tab Destinasi */}
       {tab === "destinasi" && (
         <div className="mt-8">
-          <div className="flex justify-end mb-4">
-            <button className={btn} onClick={() => setEditing({ ...empty })}>+ Tambah</button>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-neutral-800">Daftar Destinasi & Kategori</h2>
+            <button className={btn} onClick={() => setEditing({ ...empty })}>+ Tambah Destinasi</button>
           </div>
-          <div className="divide-y divide-border rounded-sm border border-border bg-card">
+          <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden shadow-sm">
             {data.map((d) => (
-              <div key={d.id} className="flex items-center gap-4 p-4">
-                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-sm bg-muted">{d.photo_url && <img src={d.photo_url} alt="" className="h-full w-full object-cover" />}</div>
-                <div className="flex-1">
-                  <p className="font-medium">{d.name} {!d.is_published && <span className="ml-2 text-xs text-muted-foreground">(draf)</span>}</p>
-                  <p className="text-xs text-muted-foreground">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</p>
+              <div key={d.id} className="flex items-center gap-4 p-4 hover:bg-neutral-50/60 transition-colors">
+                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                  {d.photo_url ? (
+                    <img src={d.photo_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">No image</div>
+                  )}
                 </div>
-                <button className="text-sm text-primary" onClick={() => setEditing(d)}>Ubah</button>
-                <button className="text-sm text-destructive" onClick={() => remove(d)}>Hapus</button>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-neutral-900 truncate">
+                    {d.name} {!d.is_published && <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">(draf)</span>}
+                  </p>
+                  <p className="text-xs text-neutral-500 mt-0.5 truncate">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button className="text-sm font-medium text-emerald-600 hover:underline cursor-pointer" onClick={() => setEditing(d)}>Ubah</button>
+                  <button className="text-sm font-medium text-destructive hover:underline cursor-pointer" onClick={() => remove(d)}>Hapus</button>
+                </div>
               </div>
             ))}
+            {data.length === 0 && (
+              <div className="py-12 text-center text-sm text-neutral-500">Belum ada destinasi yang ditambahkan.</div>
+            )}
           </div>
         </div>
       )}
 
+      {/* Konten Tab Pengaturan */}
       {tab === "pengaturan" && <SettingsPanel />}
 
+      {/* Konten Tab Khusus Super Admin (Kelola Admin) */}
+      {tab === "kelola-admin" && isSuperAdmin && <SuperAdminAdminsPanel />}
+
       {editing && <Editor value={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); qc.invalidateQueries(); }} />}
+    </div>
+  );
+}
+
+// -------------------------------------------------------------------------------------------------
+// TAB SUPER ADMIN: KELOLA AKUN ADMIN & RESET PASSWORD
+// -------------------------------------------------------------------------------------------------
+
+type AdminUser = {
+  id: string;
+  email: string;
+  role: string;
+  created_at?: string;
+  last_sign_in_at?: string;
+};
+
+function SuperAdminAdminsPanel() {
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rpcError, setRpcError] = useState<string | null>(null);
+
+  // Modal Tambah Admin
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [addSuccess, setAddSuccess] = useState("");
+
+  // Modal Reset Password
+  const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+
+  // Bantuan SQL
+  const [showSql, setShowSql] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const SQL_SCRIPT = `-- Jalankan skrip ini di Supabase Dashboard > SQL Editor:
+create extension if not exists pgcrypto with schema extensions;
+
+insert into public.user_roles (user_id, role)
+select id, 'admin'::public.app_role from auth.users where lower(email) = 'ariesagetia@gmail.com'
+on conflict (user_id, role) do nothing;
+
+create or replace function public.get_all_admins()
+returns table (id uuid, email text, role text, created_at timestamptz, last_sign_in_at timestamptz)
+language plpgsql security definer set search_path = public, auth as $$
+begin
+  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+    raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
+  end if;
+  return query select u.id, u.email::text, r.role::text, u.created_at, u.last_sign_in_at
+  from auth.users u join public.user_roles r on r.user_id = u.id where r.role = 'admin' order by u.created_at desc;
+end;
+$$;
+grant execute on function public.get_all_admins() to authenticated;
+
+create or replace function public.admin_create_user(_email text, _password text)
+returns json language plpgsql security definer set search_path = public, auth, extensions as $$
+declare _new_id uuid;
+begin
+  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+    raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
+  end if;
+  if exists (select 1 from auth.users where lower(email) = lower(trim(_email))) then
+    select id into _new_id from auth.users where lower(email) = lower(trim(_email));
+    insert into public.user_roles (user_id, role) values (_new_id, 'admin'::public.app_role) on conflict do nothing;
+    update auth.users set encrypted_password = extensions.crypt(_password, extensions.gen_salt('bf')), email_confirmed_at = coalesce(email_confirmed_at, now()) where id = _new_id;
+    return json_build_object('success', true, 'message', 'Akun diperbarui menjadi admin.');
+  end if;
+  _new_id := gen_random_uuid();
+  insert into auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, role, aud)
+  values (_new_id, '00000000-0000-0000-0000-000000000000', lower(trim(_email)), extensions.crypt(_password, extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), 'authenticated', 'authenticated');
+  insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+  values (_new_id, _new_id::text, _new_id, json_build_object('sub', _new_id::text, 'email', lower(trim(_email))), 'email', now(), now(), now());
+  insert into public.user_roles (user_id, role) values (_new_id, 'admin'::public.app_role) on conflict do nothing;
+  return json_build_object('success', true);
+end;
+$$;
+grant execute on function public.admin_create_user(text, text) to authenticated;
+
+create or replace function public.admin_reset_password(_target_email text, _new_password text)
+returns json language plpgsql security definer set search_path = public, auth, extensions as $$
+begin
+  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+    raise exception 'Akses ditolak.';
+  end if;
+  update auth.users set encrypted_password = extensions.crypt(_new_password, extensions.gen_salt('bf')), email_confirmed_at = coalesce(email_confirmed_at, now()), updated_at = now()
+  where lower(email) = lower(trim(_target_email));
+  return json_build_object('success', true);
+end;
+$$;
+grant execute on function public.admin_reset_password(text, text) to authenticated;
+
+create or replace function public.admin_delete_admin(_target_email text)
+returns json language plpgsql security definer set search_path = public, auth as $$
+declare _tid uuid;
+begin
+  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+    raise exception 'Akses ditolak.';
+  end if;
+  if lower(trim(_target_email)) = 'ariesagetia@gmail.com' then
+    raise exception 'Tidak dapat menghapus Super Admin.';
+  end if;
+  select id into _tid from auth.users where lower(email) = lower(trim(_target_email));
+  if _tid is not null then
+    delete from public.user_roles where user_id = _tid;
+    delete from auth.identities where user_id = _tid;
+    delete from auth.users where id = _tid;
+  end if;
+  return json_build_object('success', true);
+end;
+$$;
+grant execute on function public.admin_delete_admin(text) to authenticated;`;
+
+  async function loadAdmins() {
+    setLoading(true);
+    setRpcError(null);
+    try {
+      const { data, error } = await supabase.rpc("get_all_admins");
+      if (error) {
+        setRpcError(error.message);
+        // Fallback default list if RPC isn't set up yet
+        setAdmins([
+          {
+            id: "super-admin",
+            email: SUPER_ADMIN_EMAIL,
+            role: "admin",
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      } else {
+        setAdmins((data as AdminUser[]) ?? []);
+      }
+    } catch (err) {
+      setRpcError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadAdmins();
+  }, []);
+
+  async function handleAddAdminSubmit(e: FormEvent) {
+    e.preventDefault();
+    setAddBusy(true);
+    setAddError("");
+    setAddSuccess("");
+
+    try {
+      const { data, error } = await supabase.rpc("admin_create_user", {
+        _email: newEmail.trim(),
+        _password: newPassword,
+      });
+
+      if (error) throw error;
+
+      setAddSuccess(`Berhasil! Akun admin "${newEmail}" telah aktif.`);
+      setNewEmail("");
+      setNewPassword("");
+      setTimeout(() => {
+        setShowAddModal(false);
+        setAddSuccess("");
+        loadAdmins();
+      }, 1500);
+    } catch (err: unknown) {
+      setAddError(
+        (err as Error).message ||
+          "Gagal membuat akun admin. Pastikan skrip SQL helper telah dijalankan di Supabase Dashboard."
+      );
+    } finally {
+      setAddBusy(false);
+    }
+  }
+
+  async function handleDirectResetSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!resetTarget) return;
+    setResetBusy(true);
+    setResetError("");
+    setResetSuccess("");
+
+    try {
+      const { data, error } = await supabase.rpc("admin_reset_password", {
+        _target_email: resetTarget.email,
+        _new_password: resetPassword,
+      });
+
+      if (error) throw error;
+
+      setResetSuccess(`Kata sandi untuk ${resetTarget.email} berhasil diubah!`);
+      setResetPassword("");
+      setTimeout(() => {
+        setResetTarget(null);
+        setResetSuccess("");
+      }, 1500);
+    } catch (err: unknown) {
+      setResetError(
+        (err as Error).message ||
+          "Gagal mereset kata sandi langsung. Pastikan skrip SQL helper telah dijalankan di Supabase."
+      );
+    } finally {
+      setResetBusy(false);
+    }
+  }
+
+  async function handleSendResetEmail() {
+    if (!resetTarget) return;
+    setResetBusy(true);
+    setResetError("");
+    setResetSuccess("");
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetTarget.email, {
+      redirectTo: typeof window !== "undefined" ? window.location.origin + "/admin" : undefined,
+    });
+
+    setResetBusy(false);
+    if (error) {
+      setResetError(error.message);
+    } else {
+      setResetSuccess(`Tautan reset kata sandi telah dikirim ke email ${resetTarget.email}.`);
+    }
+  }
+
+  async function handleDeleteAdmin(targetEmail: string) {
+    if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL) {
+      alert("Akun Super Admin utama tidak dapat dihapus.");
+      return;
+    }
+    if (!confirm(`Apakah Anda yakin ingin mencabut hak akses dan menghapus admin "${targetEmail}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.rpc("admin_delete_admin", {
+        _target_email: targetEmail,
+      });
+      if (error) throw error;
+      alert(`Admin ${targetEmail} berhasil dihapus.`);
+      loadAdmins();
+    } catch (err: unknown) {
+      alert((err as Error).message || "Gagal menghapus admin.");
+    }
+  }
+
+  function copySql() {
+    navigator.clipboard.writeText(SQL_SCRIPT);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="mt-8 space-y-6">
+      {/* Banner Identitas Super Admin */}
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2.5 rounded-full bg-emerald-600 text-white shrink-0 mt-0.5">
+            <Shield className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-emerald-950 text-base">Hak Akses Super Admin: {SUPER_ADMIN_EMAIL}</h3>
+            <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+              Sebagai Super Admin utama, Anda memiliki wewenang eksklusif untuk <strong>menambahkan akun admin baru</strong>, 
+              <strong> mereset kata sandi admin</strong>, dan mengelola seluruh hak akses staf website Sukawati Hub.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow-sm transition-colors cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            + Tambah Admin Baru
+          </button>
+        </div>
+      </div>
+
+      {/* Peringatan jika RPC SQL belum dieksekusi di Supabase */}
+      {rpcError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              Fungsi SQL backend belum aktif di Supabase. Jalankan skrip SQL di Supabase SQL Editor agar fitur tambah & reset password otomatis aktif.
+            </span>
+          </div>
+          <button
+            onClick={() => setShowSql(!showSql)}
+            className="text-xs font-semibold bg-amber-200 hover:bg-amber-300 text-amber-950 px-3 py-1.5 rounded-md transition-colors shrink-0 cursor-pointer"
+          >
+            {showSql ? "Sembunyikan SQL" : "Lihat Skrip SQL"}
+          </button>
+        </div>
+      )}
+
+      {/* Box Penampil Skrip SQL */}
+      {showSql && (
+        <div className="rounded-xl border border-border bg-neutral-900 text-neutral-100 p-4 text-xs font-mono relative">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-700">
+            <span className="text-neutral-400 font-sans font-bold">Skrip SQL Supabase (Cukup jalankan sekali di Supabase SQL Editor):</span>
+            <button
+              onClick={copySql}
+              className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded font-sans transition-colors cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "Tersalin!" : "Salin SQL"}
+            </button>
+          </div>
+          <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed text-[11px] text-emerald-300">
+            {SQL_SCRIPT}
+          </pre>
+        </div>
+      )}
+
+      {/* Tabel Daftar Admin */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h3 className="font-bold text-neutral-900 text-sm">Daftar Akun Admin Terdaftar</h3>
+          <button
+            onClick={loadAdmins}
+            className="text-xs text-neutral-500 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            Perbarui Daftar
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center text-sm text-neutral-400">Memuat daftar admin...</div>
+        ) : (
+          <div className="divide-y divide-border">
+            {admins.map((adm) => {
+              const isMain = adm.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL;
+              return (
+                <div key={adm.id || adm.email} className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-50/60 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center shrink-0 text-sm">
+                      {adm.email.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-neutral-900 text-sm">{adm.email}</span>
+                        {isMain ? (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300">
+                            Super Admin
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded-full font-medium">
+                            Admin Staf
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {adm.created_at ? `Terdaftar sejak ${new Date(adm.created_at).toLocaleDateString("id-ID")}` : "Akun Admin Terverifikasi"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <button
+                      onClick={() => {
+                        setResetTarget(adm);
+                        setResetPassword("");
+                        setResetError("");
+                        setResetSuccess("");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-neutral-300 bg-white hover:border-emerald-600 hover:text-emerald-700 text-neutral-700 text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                      Reset Kata Sandi
+                    </button>
+
+                    {!isMain && (
+                      <button
+                        onClick={() => handleDeleteAdmin(adm.email)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-transparent text-destructive hover:bg-destructive/10 text-xs font-semibold transition-colors cursor-pointer"
+                        title="Hapus akun admin"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {admins.length === 0 && (
+              <div className="p-8 text-center text-sm text-neutral-400">
+                Belum ada data admin lain. Klik "+ Tambah Admin Baru" untuk menambahkan staf.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* MODAL: TAMBAH ADMIN BARU */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-card rounded-xl border border-border p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2 text-emerald-700">
+                <UserPlus className="w-5 h-5" />
+                <h3 className="font-bold text-lg text-neutral-900">Tambah Akun Admin Baru</h3>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-neutral-400 hover:text-neutral-600 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Akun yang Anda buatkan di sini akan langsung aktif dan otomatis memiliki hak akses masuk ke dashboard admin Sukawati Hub.
+            </p>
+
+            <form onSubmit={handleAddAdminSubmit} className="space-y-4">
+              <label className="block text-xs font-semibold text-neutral-700">
+                Email Admin Baru
+                <input
+                  type="email"
+                  className={`${input} mt-1`}
+                  placeholder="staf@sukawatihub.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="block text-xs font-semibold text-neutral-700">
+                Kata Sandi Awal (Minimal 6 karakter)
+                <input
+                  type="password"
+                  className={`${input} mt-1`}
+                  placeholder="Minimal 6 karakter"
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </label>
+
+              {addError && (
+                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{addError}</span>
+                </div>
+              )}
+
+              {addSuccess && (
+                <div className="p-3 rounded-md bg-emerald-50 text-emerald-800 text-xs flex items-center gap-2 border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{addSuccess}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 text-xs font-semibold rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button type="submit" disabled={addBusy} className={btn}>
+                  {addBusy ? "Membuat..." : "Simpan & Buat Admin"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: RESET KATA SANDI ADMIN */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-card rounded-xl border border-border p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2 text-emerald-700">
+                <KeyRound className="w-5 h-5" />
+                <h3 className="font-bold text-lg text-neutral-900">Reset Kata Sandi</h3>
+              </div>
+              <button
+                onClick={() => setResetTarget(null)}
+                className="text-neutral-400 hover:text-neutral-600 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-neutral-50 rounded-lg p-3 text-xs border border-neutral-200">
+              <span className="text-neutral-500">Akun Admin yang direset:</span>
+              <p className="font-bold text-neutral-900 text-sm mt-0.5">{resetTarget.email}</p>
+            </div>
+
+            {/* Opsi 1: Set Kata Sandi Baru Langsung */}
+            <form onSubmit={handleDirectResetSubmit} className="space-y-3 pt-2">
+              <label className="block text-xs font-semibold text-neutral-700">
+                Masukkan Kata Sandi Baru (Langsung Aktif)
+                <input
+                  type="password"
+                  className={`${input} mt-1`}
+                  placeholder="Ketik kata sandi baru (min 6 karakter)"
+                  minLength={6}
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  required
+                />
+              </label>
+
+              {resetError && (
+                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{resetError}</span>
+                </div>
+              )}
+
+              {resetSuccess && (
+                <div className="p-3 rounded-md bg-emerald-50 text-emerald-800 text-xs flex items-center gap-2 border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{resetSuccess}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button type="submit" disabled={resetBusy || !resetPassword} className={btn}>
+                  {resetBusy ? "Menyimpan..." : "Simpan Kata Sandi Baru"}
+                </button>
+
+                <div className="relative my-2 text-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-neutral-200"></div>
+                  </div>
+                  <span className="relative bg-card px-2 text-[10px] uppercase tracking-wider text-neutral-400">
+                    atau kirim email
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSendResetEmail}
+                  disabled={resetBusy}
+                  className="w-full py-2 px-4 rounded-md border border-neutral-300 hover:border-emerald-600 hover:text-emerald-700 text-xs font-semibold text-neutral-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Kirim Tautan Reset ke Email ({resetTarget.email})
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -160,7 +858,7 @@ function SettingsPanel() {
     if (err1 || err2 || err3) {
       alert("Gagal menyimpan. Pastikan tabel 'settings' sudah dibuat (kolom: key, value). Error: " + (err1?.message || err2?.message || err3?.message));
     } else {
-      alert("Tersimpan!");
+      alert("Pengaturan website berhasil disimpan!");
       refetchWa();
       refetchEmail();
       refetchHero();
@@ -170,29 +868,31 @@ function SettingsPanel() {
   if (isLoadingWa || isLoadingEmail || isLoadingHero) return <p className="mt-8 text-muted-foreground">Memuat pengaturan...</p>;
 
   return (
-    <div className="mt-8 max-w-md space-y-4 rounded-sm border border-border bg-card p-6">
-       <h2 className="text-2xl font-semibold">Pengaturan Website</h2>
+    <div className="mt-8 max-w-lg space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
+       <h2 className="text-xl font-bold text-neutral-900">Pengaturan Kontak & Banner</h2>
+       <p className="text-xs text-neutral-500">Sesuaikan informasi kontak dan gambar banner utama di halaman beranda.</p>
        
-       <label className="block text-sm">
-         <span className="text-muted-foreground">Nomor WhatsApp (Cth: +62 812-3456-7890)</span>
+       <label className="block text-xs font-semibold text-neutral-700 pt-2">
+         Nomor WhatsApp Resmi
          <input className={`${input} mt-1`} value={wa} onChange={e => setWa(e.target.value)} placeholder="+62 812-3456-7890" />
+         <span className="text-[11px] text-muted-foreground font-normal">Tampil di footer dan tombol WhatsApp mengambang.</span>
        </label>
        
-       <label className="block text-sm">
-         <span className="text-muted-foreground">Alamat Email</span>
+       <label className="block text-xs font-semibold text-neutral-700">
+         Alamat Email Resmi
          <input className={`${input} mt-1`} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="info@sukawatihub.com" />
+         <span className="text-[11px] text-muted-foreground font-normal">Tampil di kolom kontak pada footer website.</span>
        </label>
        
-       <label className="block text-sm">
-         <span className="text-muted-foreground">URL Foto Header (Maks: 2MB)</span>
+       <label className="block text-xs font-semibold text-neutral-700">
+         URL Foto Header Beranda
          <input className={`${input} mt-1`} type="url" value={heroImage} onChange={e => setHeroImage(e.target.value)} placeholder="https://..." />
+         <span className="text-[11px] text-muted-foreground font-normal">Kosongkan jika ingin menggunakan foto default Sukawati.</span>
        </label>
        
-       <button className={btn} onClick={save} disabled={busy}>{busy ? "Menyimpan..." : "Simpan"}</button>
-       
-       <p className="text-xs text-muted-foreground mt-4">
-         Catatan: Jika gagal disimpan, pastikan Anda telah membuat tabel <code>settings</code> di Supabase dengan kolom <code>key</code> (text, primary key) dan <code>value</code> (text).
-       </p>
+       <div className="pt-2">
+         <button className={btn} onClick={save} disabled={busy}>{busy ? "Menyimpan..." : "Simpan Perubahan"}</button>
+       </div>
     </div>
   );
 }
@@ -225,47 +925,63 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
   }
 
   const field = (k: keyof Destination, label: string, area = false) => (
-    <label className="block text-sm"><span className="text-muted-foreground">{label}</span>
-      {area ? <textarea className={`${input} mt-1 min-h-28`} value={(f[k] as string) ?? ""} onChange={(e) => set(k, e.target.value)} />
-        : <input className={`${input} mt-1`} value={(f[k] as string) ?? ""} onChange={(e) => set(k, e.target.value)} />}
+    <label className="block text-xs font-semibold text-neutral-700">
+      {label}
+      {area ? (
+        <textarea className={`${input} mt-1 min-h-28`} value={(f[k] as string) ?? ""} onChange={(e) => set(k, e.target.value)} />
+      ) : (
+        <input className={`${input} mt-1`} value={(f[k] as string) ?? ""} onChange={(e) => set(k, e.target.value)} />
+      )}
     </label>
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/50 p-4">
-      <form onSubmit={save} className="my-8 w-full max-w-2xl space-y-4 rounded-sm bg-background p-6">
-        <h2 className="text-3xl font-semibold">{f.id ? "Ubah" : "Tambah"} Destinasi</h2>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4">
+      <form onSubmit={save} className="my-8 w-full max-w-2xl space-y-4 rounded-xl bg-card border border-border p-6 shadow-2xl">
+        <h2 className="text-2xl font-bold text-neutral-900">{f.id ? "Ubah" : "Tambah"} Destinasi</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {field("name", "Nama *")}
+          {field("name", "Nama Destinasi *")}
           {field("slug", "Slug URL (otomatis jika kosong)")}
-          <label className="block text-sm"><span className="text-muted-foreground">Kelompok</span>
+          <label className="block text-xs font-semibold text-neutral-700">
+            Kelompok
             <select className={`${input} mt-1`} value={f.group_type} onChange={(e) => set("group_type", e.target.value)}>
               {Object.entries(GROUPS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </label>
           {field("category", "Kategori *")}
         </div>
-        {field("short_description", "Deskripsi singkat")}
-        {field("description", "Deskripsi lengkap", true)}
+        {field("short_description", "Deskripsi Singkat")}
+        {field("description", "Deskripsi Lengkap", true)}
         <div className="grid gap-4 sm:grid-cols-2">
           {field("address", "Alamat")}
-          {field("maps_url", "Link Google Maps")}
-          {field("opening_hours", "Jam buka")}
-          {field("price", "Harga")}
-          {field("contact", "Kontak / WhatsApp")}
-          {field("instagram", "Instagram")}
+          {field("maps_url", "Tautan Google Maps")}
+          {field("opening_hours", "Jam Buka")}
+          {field("price", "Harga Tiket / Biaya")}
+          {field("contact", "Nomor Kontak / WhatsApp")}
+          {field("instagram", "Akun Instagram")}
         </div>
-        <label className="block text-sm"><span className="text-muted-foreground">Foto</span>
-          {f.photo_url && !file && <img src={f.photo_url} alt="" className="mt-1 h-32 rounded-sm object-cover" />}
-          <input type="file" accept="image/*" className="mt-1 block text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <label className="block text-xs font-semibold text-neutral-700">
+          Foto Destinasi
+          {f.photo_url && !file && <img src={f.photo_url} alt="" className="mt-2 h-32 w-48 rounded-md object-cover border" />}
+          <input type="file" accept="image/*" className="mt-2 block text-xs" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
-        <div className="flex items-center gap-6 text-sm">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={!!f.is_published} onChange={(e) => set("is_published", e.target.checked)} /> Tampilkan di website</label>
-          <label className="flex items-center gap-2">Urutan <input type="number" className={`${input} w-20`} value={f.sort_order ?? 0} onChange={(e) => set("sort_order", Number(e.target.value))} /></label>
+        <div className="flex items-center gap-6 text-xs text-neutral-700 pt-2">
+          <label className="flex items-center gap-2 cursor-pointer font-medium">
+            <input type="checkbox" checked={!!f.is_published} onChange={(e) => set("is_published", e.target.checked)} className="rounded" />
+            Tampilkan di website publik
+          </label>
+          <label className="flex items-center gap-2 font-medium">
+            Urutan Tampil
+            <input type="number" className={`${input} w-20 py-1`} value={f.sort_order ?? 0} onChange={(e) => set("sort_order", Number(e.target.value))} />
+          </label>
         </div>
-        <div className="flex justify-end gap-2">
-          <button type="button" className="rounded-sm border border-border px-4 py-2 text-sm" onClick={onClose}>Batal</button>
-          <button className={btn} disabled={busy || !f.name || !f.category}>{busy ? "Menyimpan..." : "Simpan"}</button>
+        <div className="flex justify-end gap-2 pt-4 border-t border-border">
+          <button type="button" className="rounded-md border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 cursor-pointer" onClick={onClose}>
+            Batal
+          </button>
+          <button className={btn} disabled={busy || !f.name || !f.category}>
+            {busy ? "Menyimpan..." : "Simpan Destinasi"}
+          </button>
         </div>
       </form>
     </div>
