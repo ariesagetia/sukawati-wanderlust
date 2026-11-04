@@ -315,25 +315,30 @@ on conflict (user_id, role) do nothing;
 create or replace function public.get_all_admins()
 returns table (id uuid, email text, role text, created_at timestamptz, last_sign_in_at timestamptz)
 language plpgsql security definer set search_path = public, auth as $$
+#variable_conflict use_column
+declare _caller text;
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
   end if;
   return query select u.id, u.email::text, r.role::text, u.created_at, u.last_sign_in_at
-  from auth.users u join public.user_roles r on r.user_id = u.id where r.role = 'admin' order by u.created_at desc;
+  from auth.users u join public.user_roles r on r.user_id = u.id where r.role = 'admin'::public.app_role order by u.created_at desc;
 end;
 $$;
 grant execute on function public.get_all_admins() to authenticated;
 
 create or replace function public.admin_create_user(_email text, _password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
-declare _new_id uuid;
+#variable_conflict use_column
+declare _new_id uuid; _caller text;
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
   end if;
-  if exists (select 1 from auth.users where lower(email) = lower(trim(_email))) then
-    select id into _new_id from auth.users where lower(email) = lower(trim(_email));
+  if exists (select 1 from auth.users u where lower(u.email) = lower(trim(_email))) then
+    select u.id into _new_id from auth.users u where lower(u.email) = lower(trim(_email));
     insert into public.user_roles (user_id, role) values (_new_id, 'admin'::public.app_role) on conflict do nothing;
     update auth.users set encrypted_password = extensions.crypt(_password, extensions.gen_salt('bf')), email_confirmed_at = coalesce(email_confirmed_at, now()) where id = _new_id;
     return json_build_object('success', true, 'message', 'Akun diperbarui menjadi admin.');
@@ -351,8 +356,11 @@ grant execute on function public.admin_create_user(text, text) to authenticated;
 
 create or replace function public.admin_reset_password(_target_email text, _new_password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
+#variable_conflict use_column
+declare _caller text;
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak.';
   end if;
   update auth.users set encrypted_password = extensions.crypt(_new_password, extensions.gen_salt('bf')), email_confirmed_at = coalesce(email_confirmed_at, now()), updated_at = now()
@@ -364,15 +372,17 @@ grant execute on function public.admin_reset_password(text, text) to authenticat
 
 create or replace function public.admin_delete_admin(_target_email text)
 returns json language plpgsql security definer set search_path = public, auth as $$
-declare _tid uuid;
+#variable_conflict use_column
+declare _tid uuid; _caller text;
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak.';
   end if;
   if lower(trim(_target_email)) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Tidak dapat menghapus Super Admin.';
   end if;
-  select id into _tid from auth.users where lower(email) = lower(trim(_target_email));
+  select u.id into _tid from auth.users u where lower(u.email) = lower(trim(_target_email));
   if _tid is not null then
     delete from public.user_roles where user_id = _tid;
     delete from auth.identities where user_id = _tid;
@@ -554,13 +564,13 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
         </div>
       </div>
 
-      {/* Peringatan jika RPC SQL belum dieksekusi di Supabase */}
+      {/* Peringatan jika RPC SQL perlu diperbarui atau belum dieksekusi di Supabase */}
       {rpcError && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
-              Fungsi SQL backend belum aktif di Supabase. Jalankan skrip SQL di Supabase SQL Editor agar fitur tambah & reset password otomatis aktif.
+              <strong>Pemberitahuan:</strong> {rpcError}. Jalankan skrip SQL terbaru di bawah pada Supabase SQL Editor untuk memperbaikinya.
             </span>
           </div>
           <button

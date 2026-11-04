@@ -12,7 +12,7 @@ select id, 'admin'::public.app_role from auth.users
 where lower(email) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id')
 on conflict (user_id, role) do nothing;
 
--- 3. Fungsi untuk mengambil daftar semua admin (Hanya untuk Super Admin)
+-- 3. Fungsi untuk mengambil daftar semua admin (Bebas dari ambiguitas kolom)
 create or replace function public.get_all_admins()
 returns table (
   id uuid,
@@ -21,6 +21,7 @@ returns table (
   created_at timestamptz,
   last_sign_in_at timestamptz
 ) language plpgsql security definer set search_path = public, auth as $$
+#variable_conflict use_column
 declare
   _caller_email text;
 begin
@@ -38,15 +39,16 @@ begin
     u.last_sign_in_at
   from auth.users u
   join public.user_roles r on r.user_id = u.id
-  where r.role = 'admin'
+  where r.role = 'admin'::public.app_role
   order by u.created_at desc;
 end;
 $$;
 grant execute on function public.get_all_admins() to authenticated;
 
--- 4. Fungsi untuk membuat akun admin baru langsung (Hanya untuk Super Admin)
+-- 4. Fungsi untuk membuat akun admin baru langsung
 create or replace function public.admin_create_user(_email text, _password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
+#variable_conflict use_column
 declare
   _caller_email text;
   _new_user_id uuid;
@@ -66,8 +68,8 @@ begin
   end if;
 
   -- Jika user sudah terdaftar sebelumnya di auth.users:
-  if exists (select 1 from auth.users where lower(email) = lower(trim(_email))) then
-    select id into _new_user_id from auth.users where lower(email) = lower(trim(_email));
+  if exists (select 1 from auth.users u where lower(u.email) = lower(trim(_email))) then
+    select u.id into _new_user_id from auth.users u where lower(u.email) = lower(trim(_email));
     
     insert into public.user_roles (user_id, role)
     values (_new_user_id, 'admin'::public.app_role)
@@ -146,9 +148,10 @@ end;
 $$;
 grant execute on function public.admin_create_user(text, text) to authenticated;
 
--- 5. Fungsi untuk mereset kata sandi admin langsung (Hanya untuk Super Admin)
+-- 5. Fungsi untuk mereset kata sandi admin langsung
 create or replace function public.admin_reset_password(_target_email text, _new_password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
+#variable_conflict use_column
 declare
   _caller_email text;
   _target_id uuid;
@@ -162,7 +165,7 @@ begin
     raise exception 'Kata sandi baru minimal 6 karakter.';
   end if;
 
-  select id into _target_id from auth.users where lower(email) = lower(trim(_target_email));
+  select u.id into _target_id from auth.users u where lower(u.email) = lower(trim(_target_email));
   if _target_id is null then
     raise exception 'User dengan email % tidak ditemukan.', _target_email;
   end if;
@@ -178,9 +181,10 @@ end;
 $$;
 grant execute on function public.admin_reset_password(text, text) to authenticated;
 
--- 6. Fungsi untuk menghapus admin (Hanya untuk Super Admin)
+-- 6. Fungsi untuk menghapus admin
 create or replace function public.admin_delete_admin(_target_email text)
 returns json language plpgsql security definer set search_path = public, auth as $$
+#variable_conflict use_column
 declare
   _caller_email text;
   _target_id uuid;
@@ -194,7 +198,7 @@ begin
     raise exception 'Tidak dapat menghapus akun Super Admin utama.';
   end if;
 
-  select id into _target_id from auth.users where lower(email) = lower(trim(_target_email));
+  select u.id into _target_id from auth.users u where lower(u.email) = lower(trim(_target_email));
   if _target_id is not null then
     delete from public.user_roles where user_id = _target_id;
     delete from auth.identities where user_id = _target_id;
