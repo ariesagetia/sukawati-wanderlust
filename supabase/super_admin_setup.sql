@@ -1,17 +1,18 @@
 -- ==============================================================================
--- SQL SETUP: FITUR KHUSUS SUPER ADMIN (ariesagetia@gmail.com)
+-- SQL SETUP: FITUR KHUSUS SUPER ADMIN (ariesagetia@gmail.com & ariesagetia@pnb.ac.id)
 -- Jalankan skrip ini di: Supabase Dashboard > SQL Editor > New Query > Run
 -- ==============================================================================
 
 -- 1. Pastikan ekstensi pgcrypto aktif untuk enkripsi password bcrypt
 create extension if not exists pgcrypto with schema extensions;
 
--- 2. Pastikan ariesagetia@gmail.com memiliki role admin
+-- 2. Pastikan ariesagetia@gmail.com dan ariesagetia@pnb.ac.id memiliki role admin
 insert into public.user_roles (user_id, role)
-select id, 'admin'::public.app_role from auth.users where lower(email) = 'ariesagetia@gmail.com'
+select id, 'admin'::public.app_role from auth.users
+where lower(email) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id')
 on conflict (user_id, role) do nothing;
 
--- 3. Fungsi untuk mengambil daftar semua admin (Hanya untuk ariesagetia@gmail.com)
+-- 3. Fungsi untuk mengambil daftar semua admin (Hanya untuk Super Admin)
 create or replace function public.get_all_admins()
 returns table (
   id uuid,
@@ -24,8 +25,8 @@ declare
   _caller_email text;
 begin
   select lower(u.email) into _caller_email from auth.users u where u.id = auth.uid();
-  if _caller_email is null or _caller_email != 'ariesagetia@gmail.com' then
-    raise exception 'Akses ditolak: Hanya Super Admin (ariesagetia@gmail.com) yang dapat melihat daftar admin.';
+  if _caller_email is null or _caller_email not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+    raise exception 'Akses ditolak: Hanya Super Admin (ariesagetia@gmail.com / ariesagetia@pnb.ac.id) yang dapat melihat daftar admin.';
   end if;
 
   return query
@@ -43,7 +44,7 @@ end;
 $$;
 grant execute on function public.get_all_admins() to authenticated;
 
--- 4. Fungsi untuk membuat akun admin baru langsung (Hanya untuk ariesagetia@gmail.com)
+-- 4. Fungsi untuk membuat akun admin baru langsung (Hanya untuk Super Admin)
 create or replace function public.admin_create_user(_email text, _password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
 declare
@@ -52,8 +53,8 @@ declare
   _encrypted_pw text;
 begin
   select lower(u.email) into _caller_email from auth.users u where u.id = auth.uid();
-  if _caller_email is null or _caller_email != 'ariesagetia@gmail.com' then
-    raise exception 'Akses ditolak: Hanya Super Admin (ariesagetia@gmail.com) yang dapat membuat akun admin.';
+  if _caller_email is null or _caller_email not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+    raise exception 'Akses ditolak: Hanya Super Admin yang dapat membuat akun admin.';
   end if;
 
   if _email is null or length(trim(_email)) = 0 then
@@ -145,7 +146,7 @@ end;
 $$;
 grant execute on function public.admin_create_user(text, text) to authenticated;
 
--- 5. Fungsi untuk mereset kata sandi admin langsung (Hanya untuk ariesagetia@gmail.com)
+-- 5. Fungsi untuk mereset kata sandi admin langsung (Hanya untuk Super Admin)
 create or replace function public.admin_reset_password(_target_email text, _new_password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
 declare
@@ -153,8 +154,8 @@ declare
   _target_id uuid;
 begin
   select lower(u.email) into _caller_email from auth.users u where u.id = auth.uid();
-  if _caller_email is null or _caller_email != 'ariesagetia@gmail.com' then
-    raise exception 'Akses ditolak: Hanya Super Admin (ariesagetia@gmail.com) yang dapat mereset kata sandi.';
+  if _caller_email is null or _caller_email not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+    raise exception 'Akses ditolak: Hanya Super Admin yang dapat mereset kata sandi.';
   end if;
 
   if _new_password is null or length(_new_password) < 6 then
@@ -177,7 +178,7 @@ end;
 $$;
 grant execute on function public.admin_reset_password(text, text) to authenticated;
 
--- 6. Fungsi untuk menghapus admin (Hanya untuk ariesagetia@gmail.com)
+-- 6. Fungsi untuk menghapus admin (Hanya untuk Super Admin)
 create or replace function public.admin_delete_admin(_target_email text)
 returns json language plpgsql security definer set search_path = public, auth as $$
 declare
@@ -185,11 +186,11 @@ declare
   _target_id uuid;
 begin
   select lower(u.email) into _caller_email from auth.users u where u.id = auth.uid();
-  if _caller_email is null or _caller_email != 'ariesagetia@gmail.com' then
-    raise exception 'Akses ditolak: Hanya Super Admin (ariesagetia@gmail.com) yang dapat menghapus admin.';
+  if _caller_email is null or _caller_email not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+    raise exception 'Akses ditolak: Hanya Super Admin yang dapat menghapus admin.';
   end if;
 
-  if lower(trim(_target_email)) = 'ariesagetia@gmail.com' then
+  if lower(trim(_target_email)) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Tidak dapat menghapus akun Super Admin utama.';
   end if;
 

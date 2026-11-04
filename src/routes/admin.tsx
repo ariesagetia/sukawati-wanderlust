@@ -23,7 +23,9 @@ export const Route = createFileRoute("/admin")({
 const input = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors";
 const btn = "rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer";
 
-const SUPER_ADMIN_EMAIL = "ariesagetia@gmail.com";
+const SUPER_ADMIN_EMAILS = ["ariesagetia@gmail.com", "ariesagetia@pnb.ac.id"];
+const isSuperAdminEmail = (email?: string | null) =>
+  !!email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase().trim());
 
 function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -38,8 +40,8 @@ function AdminPage() {
   useEffect(() => {
     if (!session) return setIsAdmin(null);
     supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }).then(({ data }) => {
-      // Jika ariesagetia@gmail.com, selalu beri akses admin
-      if (session.user.email?.toLowerCase().trim() === SUPER_ADMIN_EMAIL) {
+      // Jika salah satu email super admin, selalu beri akses admin
+      if (isSuperAdminEmail(session.user.email)) {
         setIsAdmin(true);
       } else {
         setIsAdmin(!!data);
@@ -156,7 +158,7 @@ function Dashboard({ email }: { email: string }) {
   const [editing, setEditing] = useState<Partial<Destination> | null>(null);
   const [tab, setTab] = useState("destinasi");
 
-  const isSuperAdmin = email.toLowerCase().trim() === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = isSuperAdminEmail(email);
 
   async function remove(d: Destination) {
     if (!confirm(`Hapus "${d.name}"?`)) return;
@@ -260,7 +262,7 @@ function Dashboard({ email }: { email: string }) {
       {tab === "pengaturan" && <SettingsPanel />}
 
       {/* Konten Tab Khusus Super Admin (Kelola Admin) */}
-      {tab === "kelola-admin" && isSuperAdmin && <SuperAdminAdminsPanel />}
+      {tab === "kelola-admin" && isSuperAdmin && <SuperAdminAdminsPanel currentEmail={email} />}
 
       {editing && <Editor value={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); qc.invalidateQueries(); }} />}
     </div>
@@ -279,7 +281,7 @@ type AdminUser = {
   last_sign_in_at?: string;
 };
 
-function SuperAdminAdminsPanel() {
+function SuperAdminAdminsPanel({ currentEmail }: { currentEmail: string }) {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [rpcError, setRpcError] = useState<string | null>(null);
@@ -307,14 +309,14 @@ function SuperAdminAdminsPanel() {
 create extension if not exists pgcrypto with schema extensions;
 
 insert into public.user_roles (user_id, role)
-select id, 'admin'::public.app_role from auth.users where lower(email) = 'ariesagetia@gmail.com'
+select id, 'admin'::public.app_role from auth.users where lower(email) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id')
 on conflict (user_id, role) do nothing;
 
 create or replace function public.get_all_admins()
 returns table (id uuid, email text, role text, created_at timestamptz, last_sign_in_at timestamptz)
 language plpgsql security definer set search_path = public, auth as $$
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
   end if;
   return query select u.id, u.email::text, r.role::text, u.created_at, u.last_sign_in_at
@@ -327,7 +329,7 @@ create or replace function public.admin_create_user(_email text, _password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
 declare _new_id uuid;
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
   end if;
   if exists (select 1 from auth.users where lower(email) = lower(trim(_email))) then
@@ -350,7 +352,7 @@ grant execute on function public.admin_create_user(text, text) to authenticated;
 create or replace function public.admin_reset_password(_target_email text, _new_password text)
 returns json language plpgsql security definer set search_path = public, auth, extensions as $$
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak.';
   end if;
   update auth.users set encrypted_password = extensions.crypt(_new_password, extensions.gen_salt('bf')), email_confirmed_at = coalesce(email_confirmed_at, now()), updated_at = now()
@@ -364,10 +366,10 @@ create or replace function public.admin_delete_admin(_target_email text)
 returns json language plpgsql security definer set search_path = public, auth as $$
 declare _tid uuid;
 begin
-  if (select lower(email) from auth.users where id = auth.uid()) != 'ariesagetia@gmail.com' then
+  if (select lower(email) from auth.users where id = auth.uid()) not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Akses ditolak.';
   end if;
-  if lower(trim(_target_email)) = 'ariesagetia@gmail.com' then
+  if lower(trim(_target_email)) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
     raise exception 'Tidak dapat menghapus Super Admin.';
   end if;
   select id into _tid from auth.users where lower(email) = lower(trim(_target_email));
@@ -391,8 +393,14 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
         // Fallback default list if RPC isn't set up yet
         setAdmins([
           {
-            id: "super-admin",
-            email: SUPER_ADMIN_EMAIL,
+            id: "super-admin-1",
+            email: "ariesagetia@gmail.com",
+            role: "admin",
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: "super-admin-2",
+            email: "ariesagetia@pnb.ac.id",
             role: "admin",
             created_at: new Date().toISOString(),
           },
@@ -493,7 +501,7 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
   }
 
   async function handleDeleteAdmin(targetEmail: string) {
-    if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL) {
+    if (isSuperAdminEmail(targetEmail)) {
       alert("Akun Super Admin utama tidak dapat dihapus.");
       return;
     }
@@ -528,9 +536,9 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-emerald-950 text-base">Hak Akses Super Admin: {SUPER_ADMIN_EMAIL}</h3>
+            <h3 className="font-bold text-emerald-950 text-base">Hak Akses Super Admin: {currentEmail}</h3>
             <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-              Sebagai Super Admin utama, Anda memiliki wewenang eksklusif untuk <strong>menambahkan akun admin baru</strong>, 
+              Akun <strong>ariesagetia@gmail.com</strong> dan <strong>ariesagetia@pnb.ac.id</strong> memiliki wewenang eksklusif untuk <strong>menambahkan akun admin baru</strong>, 
               <strong> mereset kata sandi admin</strong>, dan mengelola seluruh hak akses staf website Sukawati Hub.
             </p>
           </div>
@@ -601,7 +609,7 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
         ) : (
           <div className="divide-y divide-border">
             {admins.map((adm) => {
-              const isMain = adm.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL;
+              const isMain = isSuperAdminEmail(adm.email);
               return (
                 <div key={adm.id || adm.email} className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-50/60 transition-colors">
                   <div className="flex items-center gap-3">
