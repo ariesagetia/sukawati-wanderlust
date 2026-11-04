@@ -436,6 +436,24 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
     setAddSuccess("");
 
     try {
+      // 1. Daftarkan akun melalui Supabase Auth API dengan temporary client (tanpa mengganggu sesi Super Admin)
+      // Ini memastikan struktur data schema internal Supabase Auth (GoTrue) dibuat 100% lengkap dan resmi
+      try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const tempAuth = createClient(
+          "https://tcmjodqyalbonhcddkxy.supabase.co",
+          "sb_publishable_Wx9Eigxb3lOESpgkMdUMSA_W02AcCx2",
+          { auth: { persistSession: false, autoRefreshToken: false } }
+        );
+        await tempAuth.auth.signUp({
+          email: newEmail.trim(),
+          password: newPassword,
+        });
+      } catch (signupErr) {
+        console.warn("Auth signUp notice:", signupErr);
+      }
+
+      // 2. Berikan role admin, konfirmasi email, dan perbarui password secara instan via RPC
       const { data, error } = await supabase.rpc("admin_create_user", {
         _email: newEmail.trim(),
         _password: newPassword,
@@ -443,7 +461,7 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
 
       if (error) throw error;
 
-      setAddSuccess(`Berhasil! Akun admin "${newEmail}" telah aktif.`);
+      setAddSuccess(`Berhasil! Akun admin "${newEmail}" telah aktif dan siap digunakan.`);
       setNewEmail("");
       setNewPassword("");
       setTimeout(() => {
