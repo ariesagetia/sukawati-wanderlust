@@ -45,7 +45,7 @@ function NotFoundComponent() {
         </h1>
         <p className="mt-3 text-neutral-500 text-base leading-relaxed">
           Maaf, halaman yang kamu cari tidak ada atau sudah dipindahkan.<br />
-          Yuk kembali dan jelajahi destinasi wisata Sukawati!
+          Yuk kembali dan jelajahi potensi Desa Wisata Sukawati!
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
@@ -64,7 +64,7 @@ function NotFoundComponent() {
         </div>
 
         <p className="mt-10 text-xs text-neutral-400">
-          Sukawati Hub · Desa Sukawati, Gianyar, Bali
+          Desa Wisata Sukawati · Gianyar, Bali
         </p>
       </div>
     </div>
@@ -121,11 +121,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Explore Sukawati" },
-      { name: "description", content: "Sukawati Tourism Hub — destinasi wisata Desa Sukawati, Bali." },
+      { title: "Desa Wisata Sukawati — Discover the Culture, Art, and Authentic Life of Bali" },
+      { name: "description", content: "Desa Wisata Sukawati, Gianyar, Bali. Wisata berbasis budaya, seni, tradisi, kerajinan, dan kehidupan masyarakat lokal." },
       { property: "og:type", content: "website" },
+      { property: "og:title", content: "Desa Wisata Sukawati — Discover the Culture, Art, and Authentic Life of Bali" },
+      { property: "og:description", content: "Wisata berbasis budaya, seni, tradisi, dan kehidupan masyarakat lokal di Sukawati, Gianyar, Bali." },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -162,7 +163,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
