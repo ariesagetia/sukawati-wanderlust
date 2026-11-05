@@ -97,8 +97,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "45 Menit",
     activity: "Check-in & Menikmati Suasana Pedesaan",
     desc: "Titik keberangkatan ideal dengan keramahan warga lokal dan suasana asri pedesaan Sukawati sebelum memulai eksplorasi.",
-    x: 16,
-    y: 20,
+    x: 18,
+    y: 22,
     iconKey: "home",
   },
   {
@@ -114,8 +114,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "45 Menit",
     activity: "Mengenal Spiritualitas & Arsitektur Klasik Bali",
     desc: "Pusat kehidupan spiritual masyarakat adat Hindu Sukawati dengan nilai sejarah keagungan pura Kahyangan Tiga.",
-    x: 36,
-    y: 15,
+    x: 38,
+    y: 18,
     iconKey: "temple",
   },
   {
@@ -132,7 +132,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     activity: "Melihat Proses Tempa Tradisional",
     desc: "Melihat langsung keterampilan tempa besi warisan leluhur dalam pembuatan perkakas tradisional bermutu tinggi.",
     x: 58,
-    y: 16,
+    y: 18,
     iconKey: "craft",
   },
   {
@@ -149,7 +149,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     activity: "Kreativitas Generasi Muda Sukawati",
     desc: "Sanggar Ciwa Nataraja, Ganapati Art Studio, dan Crescendo sebagai wadah pelatihan bakat seni anak-anak Bali.",
     x: 78,
-    y: 22,
+    y: 24,
     iconKey: "theater",
   },
   {
@@ -165,8 +165,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "45 Menit",
     activity: "Workshop Wayang Kulit & Gender",
     desc: "Pusat kreasi seni wayang kulit Bali dan bilah instrumen gender wayang dengan filosofi spiritual yang luhur.",
-    x: 88,
-    y: 35,
+    x: 86,
+    y: 38,
     iconKey: "scroll",
   },
   {
@@ -182,8 +182,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "30 Menit",
     activity: "Mengenal Busana & Kain Kamen Prada",
     desc: "Kerajinan busana adat dan kain prada Bali yang menjadi identitas keanggunan budaya dalam kegiatan keagamaan.",
-    x: 84,
-    y: 50,
+    x: 82,
+    y: 52,
     iconKey: "scissors",
   },
   {
@@ -199,8 +199,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "75 Menit",
     activity: "Santap Siang Tepi Lembah Petanu",
     desc: "Makan siang dengan suasana asri pemandangan Sungai Petanu, kolam renang menyegarkan, dan kuliner lezat.",
-    x: 72,
-    y: 65,
+    x: 70,
+    y: 66,
     iconKey: "food",
   },
   {
@@ -216,8 +216,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "45 Menit",
     activity: "Menikmati Deburan Ombak Pasir Hitam",
     desc: "Hamparan pasir hitam vulkanik berkilau dengan deburan ombak laut selatan yang menyejukkan pikiran.",
-    x: 54,
-    y: 82,
+    x: 52,
+    y: 78,
     iconKey: "waves",
   },
   {
@@ -233,8 +233,8 @@ export const ROUTE_POINTS: RoutePoint[] = [
     duration: "45 Menit",
     activity: "Jalan Santai Persawahan & Studio Seni",
     desc: "Menyusuri jalur jogging pertanian pedesaan yang asri sekaligus mengagumi karya kanvas seni lukis Wayan Wirawan.",
-    x: 34,
-    y: 72,
+    x: 32,
+    y: 68,
     iconKey: "palette",
   },
   {
@@ -251,7 +251,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     activity: "Belanja Cendera Mata & Kuliner Legendaris",
     desc: "Berburu karya seni dan kerajinan khas Bali di Pasar Seni Sukawati sembari mencicipi legitnya Jajan Pan Kladi.",
     x: 18,
-    y: 54,
+    y: 52,
     iconKey: "market",
   },
   {
@@ -494,13 +494,25 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* ── KANVAS DENAH PETA VISUAL (8 Kolom) ── */}
-          <div className="lg:col-span-8 bg-white/95 rounded-3xl border-2 border-emerald-200/80 p-4 sm:p-5 shadow-sm select-none">
+          <div className="lg:col-span-8 bg-white/95 rounded-3xl border-2 border-emerald-200/80 p-3 sm:p-5 shadow-sm select-none">
             
-            {/* Bingkai Peta Interaktif (Semua elemen visual & overlay geografis terisolasi di dalam bingkai ini) */}
-            <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] bg-gradient-to-b from-[#f2f7f4] via-[#eaf3ed] to-[#dfeee4] rounded-2xl border border-emerald-200/80 overflow-hidden shadow-inner">
+            {/* Header Petunjuk Wilayah di Luar Peta (Clean & Non-Intrusive, tidak menumpuk kanvas) */}
+            <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-600 mb-2.5 px-1">
+              <span className="flex items-center gap-1.5 text-emerald-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                <span>Utara: Sentra Adat &amp; Seni Budaya</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-teal-800">
+                <span className="w-2 h-2 rounded-full bg-teal-600 shrink-0" />
+                <span>Selatan: Pesisir Pantai Purnama</span>
+              </span>
+            </div>
+
+            {/* Bingkai Peta Interaktif (Bersih, luas, dan bebas dari overlap) */}
+            <div className="relative w-full aspect-[5/4] sm:aspect-[16/11] bg-gradient-to-b from-[#f2f7f4] via-[#eaf3ed] to-[#dfeee4] rounded-2xl border border-emerald-200/80 overflow-hidden shadow-inner">
               
-              {/* Kompas Orientasi Modern */}
-              <div className="absolute top-3 right-3 z-20 flex flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-emerald-200/80">
+              {/* Kompas Orientasi Modern (Hanya tampil di tablet & desktop agar tidak menyempitkan mobile) */}
+              <div className="hidden sm:flex absolute top-3 right-3 z-20 flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-emerald-200/80">
                 <div className="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] font-bold shadow">
                   U
                 </div>
@@ -508,22 +520,6 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                 <div className="w-px h-2 bg-neutral-200 my-0.5" />
                 <span className="text-[8px] font-bold text-neutral-400 tracking-tighter">LAUT</span>
                 <span className="text-[9px] font-bold text-neutral-700">S</span>
-              </div>
-
-              {/* Label Wilayah Utara (Di dalam bingkai peta) */}
-              <div className="absolute top-3 left-3 z-20 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-200/70 pointer-events-none shadow-xs">
-                Wilayah Utara · Sentra Hunian & Budaya
-              </div>
-              
-              {/* Label Wilayah Selatan (Di dalam bingkai peta di atas pantai, tidak menumpuk kontrol tombol bawah) */}
-              <div className="absolute bottom-3 left-3 z-20 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-teal-800/90 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-teal-200/70 pointer-events-none shadow-xs">
-                Wilayah Selatan · Pesisir Pantai Purnama
-              </div>
-
-              {/* Label Aliran Sungai Petanu (Di dalam bingkai peta) */}
-              <div className="absolute top-1/2 right-2 -translate-y-1/2 z-20 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-teal-800/80 rotate-90 pointer-events-none origin-right flex items-center gap-1 bg-white/75 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/60 shadow-xs">
-                <span>Sungai Petanu</span>
-                <ArrowRight className="w-2.5 h-2.5" />
               </div>
 
               {/* SVG Canvas Map */}
@@ -556,6 +552,46 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
 
                 {/* Pola Garis Grid Halus */}
                 <rect width="1000" height="650" fill="url(#gridPattern)" />
+
+                {/* ── LABEL KARTOGRAFI DASAR (WATERMARK DALAM SVG - SELALU DI BELAKANG PIN & BEBAS OVERLAP) ── */}
+                <text 
+                  x="45" 
+                  y="52" 
+                  fill="#065f46" 
+                  opacity="0.32" 
+                  fontSize="14" 
+                  fontWeight="800" 
+                  letterSpacing="3"
+                  className="select-none uppercase"
+                >
+                  WILAYAH UTARA · SENTRA HUNIAN &amp; BUDAYA
+                </text>
+
+                <text 
+                  x="45" 
+                  y="620" 
+                  fill="#0f766e" 
+                  opacity="0.35" 
+                  fontSize="14" 
+                  fontWeight="800" 
+                  letterSpacing="3"
+                  className="select-none uppercase"
+                >
+                  WILAYAH SELATAN · PESISIR PANTAI PURNAMA
+                </text>
+
+                <text 
+                  x="890" 
+                  y="65" 
+                  fill="#0f766e" 
+                  opacity="0.5" 
+                  fontSize="12" 
+                  fontWeight="800" 
+                  letterSpacing="2"
+                  className="select-none uppercase"
+                >
+                  SUNGAI PETANU ↓
+                </text>
 
                 {/* Kontur Sawah / Subak (Curves Ilustratif di Latar Belakang) */}
                 <path
@@ -612,7 +648,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                 {/* ── GARIS ALUR RUTE 1 S/D 12 ── */}
                 {/* 1. Halo Garis Putih */}
                 <path
-                  d="M 160 130 C 260 100, 300 95, 360 98 C 470 100, 520 102, 580 104 C 680 110, 740 120, 780 143 C 840 170, 890 190, 880 228 C 870 270, 860 300, 840 325 C 800 370, 760 390, 720 423 C 650 480, 600 520, 540 533 C 440 520, 390 490, 340 468 C 260 430, 200 400, 180 351 C 160 290, 210 250, 280 234 C 360 240, 420 242, 480 247"
+                  d="M 180 143 C 280 117, 320 117, 380 117 C 480 117, 520 117, 580 117 C 680 120, 740 135, 780 156 C 840 185, 875 210, 860 247 C 845 285, 840 310, 820 338 C 780 380, 740 400, 700 429 C 640 480, 580 500, 520 507 C 420 500, 370 470, 320 442 C 240 400, 190 370, 180 338 C 170 280, 210 250, 280 234 C 360 240, 420 242, 480 247"
                   fill="none"
                   stroke="white"
                   strokeWidth="12"
@@ -623,7 +659,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
 
                 {/* 2. Garis Rute Hijau Zamrud Beranimasi Putus-Putus */}
                 <path
-                  d="M 160 130 C 260 100, 300 95, 360 98 C 470 100, 520 102, 580 104 C 680 110, 740 120, 780 143 C 840 170, 890 190, 880 228 C 870 270, 860 300, 840 325 C 800 370, 760 390, 720 423 C 650 480, 600 520, 540 533 C 440 520, 390 490, 340 468 C 260 430, 200 400, 180 351 C 160 290, 210 250, 280 234 C 360 240, 420 242, 480 247"
+                  d="M 180 143 C 280 117, 320 117, 380 117 C 480 117, 520 117, 580 117 C 680 120, 740 135, 780 156 C 840 185, 875 210, 860 247 C 845 285, 840 310, 820 338 C 780 380, 740 400, 700 429 C 640 480, 580 500, 520 507 C 420 500, 370 470, 320 442 C 240 400, 190 370, 180 338 C 170 280, 210 250, 280 234 C 360 240, 420 242, 480 247"
                   fill="none"
                   stroke="url(#routeGradient)"
                   strokeWidth="4.5"
@@ -689,10 +725,10 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                     </div>
 
                     {/* ── TOOLTIP NAMA LOKASI (CLEAN & NON-OVERLAPPING) ── */}
-                    {/* Selalu tampil jika: (1) Active, atau (2) Sedang di-hover, atau (3) Mode showAllLabels aktif */}
+                    {/* Hanya tampil di layar tablet & desktop (sm:block) agar tidak menutupi pin lain pada layar mobile */}
                     {(isActive || isHovered || showAllLabels) && (
                       <div 
-                        className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-bold shadow-lg transition-all pointer-events-none z-30 ${
+                        className={`hidden sm:block absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-bold shadow-lg transition-all pointer-events-none z-30 ${
                           pt.y > 60 ? "bottom-full mb-2" : "top-full mt-2"
                         } ${
                           isActive
