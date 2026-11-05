@@ -494,36 +494,39 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* ── KANVAS DENAH PETA VISUAL (8 Kolom) ── */}
-          <div className="lg:col-span-8 bg-gradient-to-b from-[#f2f7f4] via-[#eaf3ed] to-[#dfeee4] rounded-3xl border-2 border-emerald-200/80 p-4 sm:p-6 shadow-sm relative overflow-hidden select-none">
+          <div className="lg:col-span-8 bg-white/95 rounded-3xl border-2 border-emerald-200/80 p-4 sm:p-5 shadow-sm select-none">
             
-            {/* Kompas Orientasi Modern */}
-            <div className="absolute top-4 right-4 z-20 flex flex-col items-center bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-emerald-200/80">
-              <div className="w-7 h-7 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] font-bold shadow">
-                U
+            {/* Bingkai Peta Interaktif (Semua elemen visual & overlay geografis terisolasi di dalam bingkai ini) */}
+            <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] bg-gradient-to-b from-[#f2f7f4] via-[#eaf3ed] to-[#dfeee4] rounded-2xl border border-emerald-200/80 overflow-hidden shadow-inner">
+              
+              {/* Kompas Orientasi Modern */}
+              <div className="absolute top-3 right-3 z-20 flex flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-emerald-200/80">
+                <div className="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] font-bold shadow">
+                  U
+                </div>
+                <span className="text-[8px] font-bold text-neutral-400 mt-0.5 tracking-tighter">UBUD</span>
+                <div className="w-px h-2 bg-neutral-200 my-0.5" />
+                <span className="text-[8px] font-bold text-neutral-400 tracking-tighter">LAUT</span>
+                <span className="text-[9px] font-bold text-neutral-700">S</span>
               </div>
-              <span className="text-[9px] font-bold text-neutral-400 mt-1 tracking-tighter">UBUD</span>
-              <div className="w-px h-2.5 bg-neutral-200 my-0.5" />
-              <span className="text-[9px] font-bold text-neutral-400 tracking-tighter">LAUT</span>
-              <span className="text-[10px] font-bold text-neutral-700">S</span>
-            </div>
 
-            {/* Label Petunjuk Geografis Sukawati */}
-            <div className="absolute top-4 left-5 text-[11px] font-bold uppercase tracking-wider text-emerald-800/70 bg-white/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-200/60 pointer-events-none">
-              Wilayah Utara · Sentra Hunian & Budaya
-            </div>
-            
-            <div className="absolute bottom-4 left-5 text-[11px] font-bold uppercase tracking-wider text-teal-800/80 bg-white/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-teal-200/60 pointer-events-none">
-              Wilayah Selatan · Pesisir Pantai Purnama
-            </div>
+              {/* Label Wilayah Utara (Di dalam bingkai peta) */}
+              <div className="absolute top-3 left-3 z-20 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-200/70 pointer-events-none shadow-xs">
+                Wilayah Utara · Sentra Hunian & Budaya
+              </div>
+              
+              {/* Label Wilayah Selatan (Di dalam bingkai peta di atas pantai, tidak menumpuk kontrol tombol bawah) */}
+              <div className="absolute bottom-3 left-3 z-20 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-teal-800/90 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-teal-200/70 pointer-events-none shadow-xs">
+                Wilayah Selatan · Pesisir Pantai Purnama
+              </div>
 
-            {/* Label Aliran Sungai Petanu */}
-            <div className="absolute top-1/2 right-3 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-teal-800/70 rotate-90 pointer-events-none origin-right flex items-center gap-1 bg-white/60 px-2 py-0.5 rounded-md">
-              <span>Sungai Petanu</span>
-              <ArrowRight className="w-3 h-3" />
-            </div>
+              {/* Label Aliran Sungai Petanu (Di dalam bingkai peta) */}
+              <div className="absolute top-1/2 right-2 -translate-y-1/2 z-20 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-teal-800/80 rotate-90 pointer-events-none origin-right flex items-center gap-1 bg-white/75 backdrop-blur-sm px-2 py-0.5 rounded-md border border-teal-200/60 shadow-xs">
+                <span>Sungai Petanu</span>
+                <ArrowRight className="w-2.5 h-2.5" />
+              </div>
 
-            {/* SVG Canvas Map */}
-            <div className="relative w-full aspect-[4/3] sm:aspect-[16/11]">
+              {/* SVG Canvas Map */}
               <svg 
                 className="absolute inset-0 w-full h-full pointer-events-none" 
                 viewBox="0 0 1000 650"
