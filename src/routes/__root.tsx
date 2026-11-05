@@ -9,6 +9,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Palmtree, Home, Compass, AlertTriangle, RotateCcw } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -32,8 +33,8 @@ function NotFoundComponent() {
 
         {/* Icon */}
         <div className="-mt-12 mb-6 flex justify-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200">
-            <span className="text-3xl">🌴</span>
+          <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200 text-white">
+            <Palmtree className="w-8 h-8 stroke-[1.8]" />
           </div>
         </div>
 
@@ -53,13 +54,15 @@ function NotFoundComponent() {
             to="/"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-md shadow-emerald-200"
           >
-            🏠 Kembali ke Beranda
+            <Home className="w-4 h-4" />
+            <span>Kembali ke Beranda</span>
           </Link>
           <Link
             to="/destinasi"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-6 py-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
           >
-            🗺️ Lihat Destinasi
+            <Compass className="w-4 h-4" />
+            <span>Lihat Destinasi</span>
           </Link>
         </div>
 
@@ -85,8 +88,8 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
       <div className="relative z-10 max-w-md text-center">
         <div className="mb-6 flex justify-center">
-          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-200">
-            <span className="text-3xl">⚠️</span>
+          <div className="w-16 h-16 rounded-2xl bg-red-500 flex items-center justify-center shadow-lg shadow-red-200 text-white">
+            <AlertTriangle className="w-8 h-8 stroke-[1.8]" />
           </div>
         </div>
 
@@ -100,15 +103,17 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
             onClick={() => { router.invalidate(); reset(); }}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-md shadow-emerald-200"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-md shadow-emerald-200 cursor-pointer"
           >
-            🔄 Coba Lagi
+            <RotateCcw className="w-4 h-4" />
+            <span>Coba Lagi</span>
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
           >
-            🏠 Ke Beranda
+            <Home className="w-4 h-4" />
+            <span>Ke Beranda</span>
           </a>
         </div>
       </div>

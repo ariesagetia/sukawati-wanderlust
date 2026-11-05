@@ -11,7 +11,19 @@ import {
   ArrowRight,
   Eye,
   CheckCircle2,
-  Navigation
+  Navigation,
+  Home,
+  Landmark,
+  Hammer,
+  Theater,
+  ScrollText,
+  Scissors,
+  UtensilsCrossed,
+  Waves,
+  Palette,
+  ShoppingBag,
+  Crown,
+  Flame
 } from "lucide-react";
 
 export interface RoutePoint {
@@ -26,7 +38,27 @@ export interface RoutePoint {
   desc: string;
   x: number; // Persentase X pada canvas peta (0 - 100)
   y: number; // Persentase Y pada canvas peta (0 - 100)
-  icon: string;
+  iconKey: string;
+}
+
+const ICONS_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  home: Home,
+  temple: Landmark,
+  craft: Hammer,
+  theater: Theater,
+  scroll: ScrollText,
+  scissors: Scissors,
+  food: UtensilsCrossed,
+  waves: Waves,
+  palette: Palette,
+  market: ShoppingBag,
+  crown: Crown,
+  flame: Flame,
+};
+
+function getPointIcon(key: string, className = "w-3.5 h-3.5") {
+  const IconComp = ICONS_MAP[key] || Sparkles;
+  return <IconComp className={className} />;
 }
 
 export const ROUTE_POINTS: RoutePoint[] = [
@@ -42,7 +74,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Titik keberangkatan ideal dengan keramahan warga lokal dan suasana asri pedesaan Sukawati sebelum memulai eksplorasi.",
     x: 18,
     y: 18,
-    icon: "🏡",
+    iconKey: "home",
   },
   {
     step: 2,
@@ -56,7 +88,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Pusat kehidupan spiritual masyarakat adat Hindu Sukawati dengan nilai sejarah keagungan pura Kahyangan Tiga.",
     x: 38,
     y: 14,
-    icon: "🛕",
+    iconKey: "temple",
   },
   {
     step: 3,
@@ -70,7 +102,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Melihat langsung keterampilan tempa besi warisan leluhur dalam pembuatan perkakas tradisional bermutu tinggi.",
     x: 58,
     y: 16,
-    icon: "🔨",
+    iconKey: "craft",
   },
   {
     step: 4,
@@ -84,7 +116,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Sanggar Ciwa Nataraja, Ganapati Art Studio, dan Crescendo sebagai wadah pelatihan bakat seni anak-anak Bali.",
     x: 76,
     y: 20,
-    icon: "🎭",
+    iconKey: "theater",
   },
   {
     step: 5,
@@ -98,7 +130,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Pusat kreasi seni wayang kulit Bali dan bilah instrumen gender wayang dengan filosofi spiritual yang luhur.",
     x: 88,
     y: 32,
-    icon: "📜",
+    iconKey: "scroll",
   },
   {
     step: 6,
@@ -112,7 +144,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Kerajinan busana adat dan kain prada Bali yang menjadi identitas keanggunan budaya dalam kegiatan keagamaan.",
     x: 84,
     y: 48,
-    icon: "👘",
+    iconKey: "scissors",
   },
   {
     step: 7,
@@ -126,7 +158,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Makan siang dengan suasana asri pemandangan Sungai Petanu, kolam renang menyegarkan, dan kuliner lezat.",
     x: 72,
     y: 60,
-    icon: "🍲",
+    iconKey: "food",
   },
   {
     step: 8,
@@ -140,7 +172,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Hamparan pasir hitam vulkanik berkilau dengan deburan ombak laut selatan yang menyejukkan pikiran.",
     x: 58,
     y: 78,
-    icon: "🌊",
+    iconKey: "waves",
   },
   {
     step: 9,
@@ -154,7 +186,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Menyusuri jalur jogging pertanian pedesaan yang asri sekaligus mengagumi karya kanvas seni lukis Wayan Wirawan.",
     x: 36,
     y: 68,
-    icon: "🎨",
+    iconKey: "palette",
   },
   {
     step: 10,
@@ -168,7 +200,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Berburu karya seni dan kerajinan khas Bali di Pasar Seni Sukawati sembari mencicipi legitnya Jajan Pan Kladi.",
     x: 20,
     y: 52,
-    icon: "🛍️",
+    iconKey: "market",
   },
   {
     step: 11,
@@ -182,7 +214,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Istana megah kediaman bangsawan Sukawati dengan keindahan arsitektur tradisional dan kisah masa kejayaan kerajaan.",
     x: 28,
     y: 36,
-    icon: "👑",
+    iconKey: "crown",
   },
   {
     step: 12,
@@ -196,7 +228,7 @@ export const ROUTE_POINTS: RoutePoint[] = [
     desc: "Penutup perjalanan yang memukau: gerakan dinamis Tari Kecak dan keanggunan Tari Legong di pelataran pura suci.",
     x: 48,
     y: 38,
-    icon: "🔥",
+    iconKey: "flame",
   },
 ];
 
@@ -267,8 +299,9 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
           <div className="absolute bottom-4 left-6 text-[11px] font-bold uppercase tracking-wider text-emerald-800/60 pointer-events-none">
             Wilayah Selatan · Pesisir & Samudera
           </div>
-          <div className="absolute top-1/2 right-4 -translate-y-1/2 text-[11px] font-bold uppercase tracking-wider text-teal-800/60 rotate-90 pointer-events-none origin-right">
-            Sungai Petanu ➔
+          <div className="absolute top-1/2 right-4 -translate-y-1/2 text-[11px] font-bold uppercase tracking-wider text-teal-800/60 rotate-90 pointer-events-none origin-right flex items-center gap-1">
+            <span>Sungai Petanu</span>
+            <ArrowRight className="w-3 h-3" />
           </div>
 
           {/* SVG Canvas Map */}
@@ -364,9 +397,9 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                       {pt.step}
                     </span>
 
-                    {/* Small category icon badge */}
-                    <span className="absolute -top-1 -right-1 text-[10px]">
-                      {pt.icon}
+                    {/* Small category modern vector icon badge */}
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white border border-emerald-500/80 text-emerald-800 flex items-center justify-center shadow-xs">
+                      {getPointIcon(pt.iconKey, "w-2.5 h-2.5")}
                     </span>
                   </div>
 
@@ -399,6 +432,9 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                       : "bg-white/80 text-neutral-600 hover:bg-white hover:text-emerald-700 border border-neutral-200/60"
                   }`}
                 >
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center ${isCurrent ? "text-white" : "text-emerald-700"}`}>
+                    {getPointIcon(pt.iconKey, "w-3 h-3")}
+                  </span>
                   <span className="text-[11px] font-bold">#{pt.step}</span>
                   <span className="hidden md:inline">{pt.shortName}</span>
                 </button>
@@ -412,8 +448,9 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
           <div>
             {/* Header Card Titik Aktif */}
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                Pemberhentian #{activePoint.step} dari 12
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
+                {getPointIcon(activePoint.iconKey, "w-3.5 h-3.5 text-emerald-600")}
+                <span>Pemberhentian #{activePoint.step} dari 12</span>
               </span>
               <span className="text-xs font-medium text-neutral-500 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-emerald-600" />

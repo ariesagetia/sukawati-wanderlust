@@ -13,8 +13,11 @@ import {
   MapPin, 
   Palette, 
   Utensils, 
+  UtensilsCrossed,
   Waves, 
   Landmark, 
+  Theater,
+  Hammer,
   Users, 
   HeartHandshake, 
   CheckCircle2,
@@ -138,42 +141,54 @@ function Index() {
             </div>
 
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
-                  🏛️
+              {/* 1. Spiritual & Tradisi */}
+              <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-neutral-200/80 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-50 border border-emerald-200/80 text-emerald-700 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                  <Landmark className="w-6 h-6 stroke-[1.8]" />
                 </div>
-                <h3 className="font-bold text-neutral-900 text-lg">Spiritual & Tradisi</h3>
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <h3 className="font-bold text-neutral-900 text-lg tracking-tight group-hover:text-emerald-700 transition-colors">
+                  Spiritual & Tradisi
+                </h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Pura Desa lan Puseh serta Puri Ageng Sukawati yang melambangkan keagungan cagar budaya dan spiritualitas Hindu Bali.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
-                  🎭
+              {/* 2. Seniman & Sanggar */}
+              <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-neutral-200/80 shadow-sm hover:shadow-xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-100 to-indigo-50 border border-purple-200/80 text-purple-700 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+                  <Theater className="w-6 h-6 stroke-[1.8]" />
                 </div>
-                <h3 className="font-bold text-neutral-900 text-lg">Seniman & Sanggar</h3>
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <h3 className="font-bold text-neutral-900 text-lg tracking-tight group-hover:text-purple-700 transition-colors">
+                  Seniman & Sanggar
+                </h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Pusat pelatihan tari, seni rupa, vokal, dan wayang kulit yang terus melestarikan kesenian Bali untuk generasi penerus.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
-                  🔨
+              {/* 3. Kerajinan Autentik */}
+              <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-neutral-200/80 shadow-sm hover:shadow-xl hover:border-amber-300 hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-50 border border-amber-200/80 text-amber-700 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                  <Hammer className="w-6 h-6 stroke-[1.8]" />
                 </div>
-                <h3 className="font-bold text-neutral-900 text-lg">Kerajinan Autentik</h3>
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <h3 className="font-bold text-neutral-900 text-lg tracking-tight group-hover:text-amber-700 transition-colors">
+                  Kerajinan Autentik
+                </h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Keahlian tempa pandai besi, seni ukir wayang, dan busana kamen prada Bali yang diwariskan turun-temurun.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
-                  🍲
+              {/* 4. Kuliner & Rekreasi */}
+              <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-neutral-200/80 shadow-sm hover:shadow-xl hover:border-rose-300 hover:-translate-y-1 transition-all duration-300 space-y-3 group">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-100 to-orange-50 border border-rose-200/80 text-rose-700 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+                  <UtensilsCrossed className="w-6 h-6 stroke-[1.8]" />
                 </div>
-                <h3 className="font-bold text-neutral-900 text-lg">Kuliner & Rekreasi</h3>
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <h3 className="font-bold text-neutral-900 text-lg tracking-tight group-hover:text-rose-700 transition-colors">
+                  Kuliner & Rekreasi
+                </h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
                   Kenikmatan Jajan Pan Kladi legendaris, santap siang di tepi Sungai Petanu, hingga pesisir Pantai Purnama.
                 </p>
               </div>
