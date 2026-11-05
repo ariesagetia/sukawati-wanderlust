@@ -282,14 +282,34 @@ export async function fetchDestinations(all = false) {
     let q = supabase.from("destinations").select("*").order("sort_order");
     if (!all) q = q.eq("is_published", true);
     const { data, error } = await q;
-    if (error) {
-      console.warn("Supabase fetchDestinations error:", error);
-      return OFFICIAL_DESTINATIONS;
+
+    if (!error && data && data.length > 0) {
+      // Periksa apakah database sudah dimigrasi ke 12 destinasi resmi yang baru
+      const hasOfficial = data.some(d => d.slug === "homestay-wayan-rutawan" || d.slug === "dsanga-bistro-pool-space");
+      if (hasOfficial) {
+        return data as Destination[];
+      }
+
+      // Jika database masih menyimpan data lama (yang beberapa fotonya kosong),
+      // sinkronkan dengan OFFICIAL_DESTINATIONS agar data selalu lengkap dan konsisten
+      return OFFICIAL_DESTINATIONS.map(official => {
+        const match = data.find(d => 
+          d.slug === official.slug || 
+          d.name.toLowerCase().includes(official.name.toLowerCase().slice(0, 8))
+        );
+        if (match) {
+          return {
+            ...official,
+            id: match.id || official.id,
+            photo_url: match.photo_url || official.photo_url,
+            video_url: match.video_url || official.video_url,
+          };
+        }
+        return official;
+      });
     }
-    if (!data || data.length === 0) {
-      return OFFICIAL_DESTINATIONS;
-    }
-    return data as Destination[];
+
+    return OFFICIAL_DESTINATIONS;
   } catch (err) {
     console.warn("fetchDestinations exception, using official list:", err);
     return OFFICIAL_DESTINATIONS;
@@ -299,7 +319,14 @@ export async function fetchDestinations(all = false) {
 export async function fetchDestination(slug: string) {
   try {
     const { data, error } = await supabase.from("destinations").select("*").eq("slug", slug).maybeSingle();
-    if (data) return data as Destination;
+    if (data) {
+      // Pastikan jika photo_url di db kosong, gunakan fallback photo resmi
+      const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === slug);
+      return {
+        ...data,
+        photo_url: data.photo_url || officialMatch?.photo_url || null,
+      } as Destination;
+    }
     if (error) console.warn("Supabase fetchDestination error:", error);
   } catch (err) {
     console.warn("fetchDestination exception:", err);

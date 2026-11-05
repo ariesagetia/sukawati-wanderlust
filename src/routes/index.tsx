@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import hero from "@/assets/hero.jpg";
 import { SiteChrome } from "@/components/SiteChrome";
+import { DenahRuteSukawati } from "@/components/DenahRuteSukawati";
 import { fetchDestinations, fetchSetting, GROUPS, type Destination } from "@/lib/supabase";
 import { 
   ChevronRight, 
@@ -31,94 +32,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
-
-// 12 Titik Rute Wisata Desa Sukawati (Halaman 4 Dokumen)
-const ROUTE_STEPS = [
-  {
-    step: 1,
-    slug: "homestay-wayan-rutawan",
-    name: "Homestay Wayan Rutawan – Banjar Kebalian",
-    tag: "Akomodasi & Titik Awal",
-    desc: "Merasakan suasana lingkungan pedesaan yang asri dan keramahan masyarakat setempat sebelum memulai eksplorasi.",
-  },
-  {
-    step: 2,
-    slug: "pura-desa-lan-puseh",
-    name: "Pura Desa lan Puseh – Desa Sukawati",
-    tag: "Spiritual & Sejarah Adat",
-    desc: "Mengenal bagian penting dari kehidupan spiritual masyarakat Hindu Bali dan sejarah erat masyarakat adat Sukawati.",
-  },
-  {
-    step: 3,
-    slug: "perajin-pandai-besi-wayan-balik-suanda",
-    name: "Perajin Pandai Besi Wayan Balik Suanda – Banjar Dlodpangkung",
-    tag: "Kerajinan Logam",
-    desc: "Melihat langsung keterampilan, ketelitian, dan pengalaman tradisional pandai besi dalam pembuatan peralatan logam.",
-  },
-  {
-    step: 4,
-    slug: "sanggar-tari-dan-seni",
-    name: "Sanggar Tari dan Seni Sukawati",
-    tag: "Seni Pertunjukan & Rupa",
-    desc: "Ruang kreativitas generasi muda: Sanggar Tari Ciwa Nataraja, Ganapati Art Studio, dan Sanggar Vokal Crescendo.",
-  },
-  {
-    step: 5,
-    slug: "kerajinan-wayang-dan-gender-wayang",
-    name: "Kerajinan Wayang & Gender Wayang – Ketut Sudiana",
-    tag: "Seni Pewayangan Bali",
-    desc: "Menelusuri proses kreatif pembuatan wayang kulit Bali, alat musik gender wayang, dan seni pertunjukan wayang.",
-  },
-  {
-    step: 6,
-    slug: "kerajinan-pakaian-bali-nyoman-parsa",
-    name: "Kerajinan Pakaian Bali – Nyoman Parsa",
-    tag: "Busana Tradisional & Adat",
-    desc: "Mengenal kerajinan pakaian tradisional Bali sebagai identitas budaya serta penggunaannya dalam upacara adat.",
-  },
-  {
-    step: 7,
-    slug: "dsanga-bistro-pool-space",
-    name: "Makan Siang – D'Sanga Bistro, Pool & Space",
-    tag: "Kuliner & Relaksasi",
-    desc: "Menikmati makan siang bersantai bersama keluarga dengan perpaduan kolam renang dan panorama Sungai Petanu.",
-  },
-  {
-    step: 8,
-    slug: "pantai-purnama",
-    name: "Pantai Purnama – Desa Sukawati",
-    tag: "Pesona Alam Pesisir",
-    desc: "Suasana pesisir khas dengan hamparan pasir hitam vulkanik, deburan ombak, dan panorama laut yang menenangkan.",
-  },
-  {
-    step: 9,
-    slug: "jogging-track-sudamala-art-painting",
-    name: "Jogging Track Sudamala & Art Painting – Wayan Wirawan",
-    tag: "Rekreasi & Seni Lukis",
-    desc: "Jalur jogging asri persawahan warga yang dipadukan dengan aktivitas karya seni lukis Wayan Wirawan.",
-  },
-  {
-    step: 10,
-    slug: "pasar-seni-sukawati-jajan-pan-kladi",
-    name: "Pasar Seni & Oleh-Oleh Khas – Jajan Pan Kladi",
-    tag: "Belanja & Kuliner Lokal",
-    desc: "Berbelanja kerajinan khas Bali di Pasar Seni Sukawati dan mencicipi jajanan lokal legendaris Jajan Pan Kladi.",
-  },
-  {
-    step: 11,
-    slug: "puri-ageng-sukawati",
-    name: "Puri Ageng Sukawati – Banjar Mudita",
-    tag: "Warisan Sejarah Kerajaan",
-    desc: "Mengenal jejak sejarah Kerajaan Sukawati, arsitektur istana Bali klasik, dan kehidupan tradisional masyarakat.",
-  },
-  {
-    step: 12,
-    slug: "pertunjukan-tari-kecak-dan-tari-legong",
-    name: "Makan Malam & Tari Kecak / Legong – Pura Penataran Agung",
-    tag: "Puncak Seni Budaya",
-    desc: "Mengakhiri perjalanan dengan menyaksikan keindahan gerakan tari, iringan gamelan, dan magisnya Tari Kecak & Legong.",
-  },
-];
 
 function Index() {
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -175,7 +88,7 @@ function Index() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold text-sm px-8 py-3.5 rounded-full shadow-lg shadow-emerald-900/50 hover:shadow-emerald-700/60 transition-all cursor-pointer"
             >
               <Compass className="w-4 h-4" />
-              <span>Jelajahi 12 Rute Wisata</span>
+              <span>Lihat Denah Rute Wisata</span>
             </a>
             <Link 
               to="/destinasi" 
@@ -361,74 +274,20 @@ function Index() {
         </div>
       </section>
 
-      {/* ── 4. RUTE PERJALANAN WISATA (Halaman 4 Dokumen, Butir 4) ── */}
+      {/* ── 4. RUTE PERJALANAN WISATA: KEMASAN DENAH VISUAL (Halaman 4 Dokumen) ── */}
       <section id="rute" className="py-24 px-6 bg-white text-neutral-900 border-b border-neutral-100">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
-            <div className="max-w-2xl">
-              <span className="text-xs uppercase font-bold tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                Itinerary Terintegrasi
-              </span>
-              <h2 
-                className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 mt-3"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Rute Perjalanan Wisata Desa Sukawati
-              </h2>
-              <p className="text-neutral-600 mt-3 text-sm sm:text-base leading-relaxed">
-                Wisatawan dapat menjelajahi berbagai potensi budaya dan wisata Desa Sukawati melalui 12 titik rute perjalanan terpadu:
-              </p>
-            </div>
-            <Link 
-              to="/destinasi" 
-              className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors shrink-0 group"
-            >
-              <span>Lihat direktori lengkap</span>
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ROUTE_STEPS.map((r) => (
-              <Link 
-                key={r.step} 
-                to="/destinasi/$slug" 
-                params={{ slug: r.slug }}
-                className="group relative rounded-2xl border border-neutral-200/80 bg-card p-6 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-950/5 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="w-10 h-10 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-                      {String(r.step).padStart(2, "0")}
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                      {r.tag}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-neutral-900 text-base group-hover:text-emerald-700 transition-colors leading-snug mb-2">
-                    {r.name}
-                  </h3>
-                  <p className="text-xs text-neutral-600 leading-relaxed">
-                    {r.desc}
-                  </p>
-                </div>
-
-                <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs font-semibold text-emerald-700">
-                  <span>Lihat Selengkapnya</span>
-                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </div>
-              </Link>
-            ))}
-          </div>
+          {/* Komponen Denah Rute Interaktif Sukawati */}
+          <DenahRuteSukawati destinations={destinations} />
         </div>
       </section>
 
-      {/* ── 5. DIRECTORY DAYA TARIK & AKTIVITAS (Halaman 2 & 3 Dokumen) ── */}
-      <section id="destinasi" className="py-24 px-6 bg-neutral-50/60 text-neutral-900">
+      {/* ── 5. KATALOG DAYA TARIK WISATA DAN AKTIVITAS (Halaman 2 & 3 Dokumen) ── */}
+      <section id="destinasi" className="py-24 px-6 bg-gradient-to-b from-neutral-50/70 to-white text-neutral-900">
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-xs uppercase font-bold tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              Katalog Wisata
+              Katalog Lengkap
             </span>
             <h2 
               className="text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 mt-3"
@@ -436,38 +295,41 @@ function Index() {
             >
               Daya Tarik Wisata dan Aktivitas
             </h2>
-            <p className="text-neutral-600 mt-3 text-sm sm:text-base">
-              Filter berdasarkan kategori untuk menemukan akomodasi, sanggar seni, kerajinan, kuliner, dan objek wisata bersejarah.
+            <p className="text-neutral-600 mt-3 text-sm sm:text-base leading-relaxed">
+              Jelajahi 12 potensi unggulan Desa Sukawati berdasarkan kategori minat: akomodasi homestay, seni budaya, kerajinan, kuliner, dan pertunjukan tradisi.
             </p>
           </div>
 
-          {/* Filter Pills */}
+          {/* Filter Pills Tematik */}
           <div className="flex flex-wrap gap-2.5 mb-12 justify-center">
             <button 
               onClick={() => setSelectedGroup("all")}
               className={`rounded-full border px-5 py-2 text-xs sm:text-sm font-semibold transition cursor-pointer ${
                 selectedGroup === "all" 
                   ? "border-emerald-600 bg-emerald-600 text-white shadow-sm" 
-                  : "border-neutral-200 bg-white text-neutral-600 hover:border-emerald-500 hover:text-emerald-700"
+                  : "border-neutral-200 bg-white text-neutral-600 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/40"
               }`}
             >
-              Semua Daya Tarik
+              Semua Daya Tarik ({destinations.length})
             </button>
             {Object.entries(GROUPS)
               .filter(([k]) => ["akomodasi", "budaya", "kerajinan", "kuliner", "sejarah"].includes(k))
-              .map(([k, v]) => (
-                <button 
-                  key={k} 
-                  onClick={() => setSelectedGroup(k)}
-                  className={`rounded-full border px-5 py-2 text-xs sm:text-sm font-semibold transition cursor-pointer ${
-                    selectedGroup === k 
-                      ? "border-emerald-600 bg-emerald-600 text-white shadow-sm" 
-                      : "border-neutral-200 bg-white text-neutral-600 hover:border-emerald-500 hover:text-emerald-700"
-                  }`}
-                >
-                  {v}
-                </button>
-            ))}
+              .map(([k, v]) => {
+                const count = destinations.filter(d => d.group_type === k).length;
+                return (
+                  <button 
+                    key={k} 
+                    onClick={() => setSelectedGroup(k)}
+                    className={`rounded-full border px-5 py-2 text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                      selectedGroup === k 
+                        ? "border-emerald-600 bg-emerald-600 text-white shadow-sm" 
+                        : "border-neutral-200 bg-white text-neutral-600 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/40"
+                    }`}
+                  >
+                    {v} {count > 0 ? `(${count})` : ""}
+                  </button>
+                );
+            })}
           </div>
 
           {isLoading && <p className="text-center text-neutral-500 py-12">Memuat daftar destinasi...</p>}
@@ -492,9 +354,15 @@ function Index() {
                 )}
                 
                 {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/10" />
                 
-                {/* Video Badge */}
+                {/* Route Order Badge di Kiri Atas */}
+                <div className="absolute top-4 left-4 bg-emerald-700/90 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 border border-emerald-500/40">
+                  <MapPin className="w-3 h-3 text-emerald-300" />
+                  <span>Rute #{d.sort_order}</span>
+                </div>
+
+                {/* Video Badge di Kanan Atas jika ada */}
                 {d.video_url && (
                   <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 text-white text-[11px] font-medium flex items-center gap-1.5 border border-white/20 shadow-sm">
                     <Play className="w-3 h-3 fill-white" />
@@ -524,7 +392,7 @@ function Index() {
               to="/destinasi"
               className="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-800 px-8 py-3 text-sm font-semibold hover:border-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm cursor-pointer"
             >
-              Lihat Seluruh Direktori Daya Tarik
+              Buka Direktori Lengkap Semua Daya Tarik
             </Link>
           </div>
         </div>
