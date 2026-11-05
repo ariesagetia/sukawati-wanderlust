@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
 import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film } from "lucide-react";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -946,13 +946,33 @@ function SettingsPanel() {
 
 function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState<Partial<Destination>>(value);
+  
+  // State Foto
   const [file, setFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // State Video
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
   const [busy, setBusy] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>("");
   const set = (k: keyof Destination, v: unknown) => setF((p) => ({ ...p, [k]: v }));
 
+  // Pratinjau Foto saat file baru dipilih
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPhotoPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPhotoPreview(null);
+    }
+  }, [file]);
+
+  // Pratinjau Video saat file baru dipilih
   useEffect(() => {
     if (videoFile) {
       const url = URL.createObjectURL(videoFile);
@@ -963,11 +983,30 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
     }
   }, [videoFile]);
 
+  // Fungsi Hapus Foto
+  function handleRemovePhoto() {
+    setFile(null);
+    set("photo_url", null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  }
+
+  // Fungsi Hapus Video
+  function handleRemoveVideo() {
+    setVideoFile(null);
+    set("video_url", null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
+  }
+
   async function save(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setUploadStatus("Menyiapkan data...");
     try {
+      // 1. Tangani Foto Destinasi
       let photo_url = f.photo_url ?? null;
       if (file) {
         setUploadStatus("Mengunggah foto destinasi...");
@@ -977,6 +1016,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
         photo_url = supabase.storage.from("destination-photos").getPublicUrl(path).data.publicUrl;
       }
 
+      // 2. Tangani Video Destinasi
       let video_url = f.video_url?.trim() || null;
       if (videoFile) {
         setUploadStatus("Mengunggah file video...");
@@ -1074,14 +1114,71 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
           {field("instagram", "Akun Instagram")}
         </div>
 
-        {/* Upload Foto */}
-        <label className="block text-xs font-semibold text-neutral-700">
-          Foto Destinasi
-          {f.photo_url && !file && <img src={f.photo_url} alt="" className="mt-2 h-32 w-48 rounded-md object-cover border" />}
-          <input type="file" accept="image/*" className="mt-2 block text-xs" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        </label>
+        {/* ── BAGIAN FOTO DESTINASI (BISA DIUNGGAH & DIHAPUS) ── */}
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Foto Destinasi</span>
+            </div>
+            {(f.photo_url || file) && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Hapus Foto
+              </button>
+            )}
+          </div>
 
-        {/* Upload & Input Video Destinasi */}
+          <p className="text-xs text-neutral-500 leading-relaxed">
+            Foto utama yang akan tampil pada kartu explore dan header halaman destinasi.
+          </p>
+
+          {/* Pratinjau Foto */}
+          {(photoPreview || f.photo_url) ? (
+            <div className="relative inline-block group">
+              <div className="h-36 w-56 rounded-lg overflow-hidden border border-neutral-300 bg-neutral-200 shadow-sm relative">
+                <img
+                  src={photoPreview || f.photo_url || ""}
+                  alt="Pratinjau Foto Destinasi"
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  title="Hapus foto ini"
+                  className="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-700 text-white rounded-full p-1.5 shadow-md transition-all hover:scale-110 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <span className="block mt-1 text-[11px] text-neutral-500">
+                {photoPreview ? "Foto baru dipilih (akan disimpan)" : "Foto saat ini tersimpan"}
+              </span>
+            </div>
+          ) : (
+            <div className="py-2 text-xs text-neutral-400 italic">
+              Belum ada foto yang dipilih / foto telah dihapus.
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
+              {(photoPreview || f.photo_url) ? "Ganti Berkas Foto:" : "Pilih Berkas Foto:"}
+            </label>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="block w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+        </div>
+
+        {/* ── BAGIAN VIDEO DESTINASI (BISA DIUNGGAH & DIHAPUS) ── */}
         <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -1091,7 +1188,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
             {(f.video_url || videoFile) && (
               <button
                 type="button"
-                onClick={() => { setVideoFile(null); set("video_url", null); }}
+                onClick={handleRemoveVideo}
                 className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Hapus Video
@@ -1103,12 +1200,53 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
             Unggah file video (MP4/WebM) ATAU masukkan tautan video YouTube / link video eksternal. Video akan ditampilkan di halaman detail destinasi.
           </p>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Pratinjau Video */}
+          {(videoPreview || f.video_url) ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-neutral-600">
+                  {videoPreview ? "Video baru dipilih (akan disimpan):" : "Video terpasang saat ini:"}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemoveVideo}
+                  className="text-[11px] text-rose-600 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                >
+                  <X className="w-3 h-3" /> Batalkan / Hapus
+                </button>
+              </div>
+              <div className="max-w-md aspect-video rounded-lg overflow-hidden bg-black border border-neutral-300 shadow-inner relative group">
+                {videoPreview ? (
+                  <video src={videoPreview} controls className="w-full h-full object-contain" />
+                ) : f.video_url ? (
+                  getYouTubeEmbedUrl(f.video_url) ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(f.video_url)!}
+                      title="Pratinjau Video"
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video src={f.video_url} controls className="w-full h-full object-contain">
+                      Format video tidak didukung.
+                    </video>
+                  )
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="py-2 text-xs text-neutral-400 italic">
+              Belum ada video yang dipilih / video telah dihapus.
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-2 pt-1">
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Unggah File Video (MP4 / WebM):
+                {(videoPreview || f.video_url) ? "Ganti File Video (MP4 / WebM):" : "Unggah File Video (MP4 / WebM):"}
               </label>
               <input
+                ref={videoInputRef}
                 type="file"
                 accept="video/mp4,video/webm,video/quicktime,video/*"
                 className="block w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
@@ -1135,36 +1273,14 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
                 value={(f.video_url as string) ?? ""}
                 onChange={(e) => {
                   set("video_url", e.target.value);
-                  if (e.target.value) setVideoFile(null);
+                  if (e.target.value) {
+                    setVideoFile(null);
+                    if (videoInputRef.current) videoInputRef.current.value = "";
+                  }
                 }}
               />
             </div>
           </div>
-
-          {/* Pratinjau Video */}
-          {(videoPreview || f.video_url) && (
-            <div className="mt-3 pt-3 border-t border-neutral-200">
-              <span className="block text-[11px] font-semibold text-neutral-600 mb-1.5">Pratinjau Video:</span>
-              <div className="max-w-md aspect-video rounded-lg overflow-hidden bg-black border border-neutral-300 shadow-inner">
-                {videoPreview ? (
-                  <video src={videoPreview} controls className="w-full h-full object-contain" />
-                ) : f.video_url ? (
-                  getYouTubeEmbedUrl(f.video_url) ? (
-                    <iframe
-                      src={getYouTubeEmbedUrl(f.video_url)!}
-                      title="Pratinjau Video"
-                      className="w-full h-full border-0"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <video src={f.video_url} controls className="w-full h-full object-contain">
-                      Format video tidak didukung.
-                    </video>
-                  )
-                ) : null}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-6 text-xs text-neutral-700 pt-2">
