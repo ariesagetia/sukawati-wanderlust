@@ -33,6 +33,7 @@ create table public.destinations (
   contact text,
   instagram text,
   photo_url text,
+  video_url text,
   sort_order int not null default 0,
   is_published boolean not null default true,
   created_at timestamptz not null default now(),
@@ -53,6 +54,13 @@ create policy "Public read photos" on storage.objects for select using (bucket_i
 create policy "Admin upload photos" on storage.objects for insert to authenticated with check (bucket_id = 'destination-photos' and public.has_role(auth.uid(), 'admin'));
 create policy "Admin update photos" on storage.objects for update to authenticated using (bucket_id = 'destination-photos' and public.has_role(auth.uid(), 'admin'));
 create policy "Admin delete photos" on storage.objects for delete to authenticated using (bucket_id = 'destination-photos' and public.has_role(auth.uid(), 'admin'));
+
+-- Penyimpanan video
+insert into storage.buckets (id, name, public) values ('destination-videos', 'destination-videos', true) on conflict do nothing;
+create policy "Public read videos" on storage.objects for select using (bucket_id = 'destination-videos');
+create policy "Admin upload videos" on storage.objects for insert to authenticated with check (bucket_id = 'destination-videos' and public.has_role(auth.uid(), 'admin'));
+create policy "Admin update videos" on storage.objects for update to authenticated using (bucket_id = 'destination-videos' and public.has_role(auth.uid(), 'admin'));
+create policy "Admin delete videos" on storage.objects for delete to authenticated using (bucket_id = 'destination-videos' and public.has_role(auth.uid(), 'admin'));
 
 -- Data awal (dari dokumen Potensi Desa Sukawati)
 insert into public.destinations (slug, name, group_type, category, short_description, description, sort_order) values

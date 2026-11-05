@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { SiteChrome } from "@/components/SiteChrome";
 import { fetchDestinations, GROUPS } from "@/lib/supabase";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Play } from "lucide-react";
 
 export const Route = createFileRoute("/destinasi/")({
   head: () => ({
@@ -34,7 +34,7 @@ function DestinasiIndex() {
           <div className="flex flex-wrap gap-3 mb-12 justify-center">
             {[...Object.entries(GROUPS), ["all", "Semua"] as [string, string]].map(([k, v]) => (
               <button key={k} onClick={() => setGroup(k)}
-                className={`rounded-full border px-5 py-2 text-sm font-medium transition ${group === k ? "border-emerald-600 bg-emerald-600 text-white" : "border-neutral-200 text-neutral-600 hover:border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"}`}>
+                className={`rounded-full border px-5 py-2 text-sm font-medium transition cursor-pointer ${group === k ? "border-emerald-600 bg-emerald-600 text-white" : "border-neutral-200 text-neutral-600 hover:border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"}`}>
                 {v}
               </button>
             ))}
@@ -54,6 +54,14 @@ function DestinasiIndex() {
                 {/* Gradient overlay for text */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 
+                {/* Video badge */}
+                {d.video_url && (
+                  <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 text-white text-[11px] font-medium flex items-center gap-1.5 border border-white/20 shadow-sm">
+                    <Play className="w-3 h-3 fill-white" />
+                    <span>Video</span>
+                  </div>
+                )}
+
                 <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
                   <div className="flex flex-col gap-1 drop-shadow-md">
                     <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wider">{GROUPS[d.group_type] ?? d.group_type}</span>

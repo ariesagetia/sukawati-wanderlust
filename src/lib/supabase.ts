@@ -22,6 +22,7 @@ export type Destination = {
   contact: string | null;
   instagram: string | null;
   photo_url: string | null;
+  video_url: string | null;
   sort_order: number;
   is_published: boolean;
 };
@@ -33,6 +34,13 @@ export const GROUPS: Record<string, string> = {
   kuliner: "Kuliner",
   festival: "Event & Festival",
 };
+
+export function getYouTubeEmbedUrl(url?: string | null): string | null {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regExp);
+  return match && match[1] ? `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0` : null;
+}
 
 export async function fetchDestinations(all = false) {
   let q = supabase.from("destinations").select("*").order("sort_order");

@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
-import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination } from "@/lib/supabase";
-import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X } from "lucide-react";
+import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -149,7 +149,7 @@ function Login() {
   );
 }
 
-const empty: Partial<Destination> = { name: "", slug: "", group_type: "destinasi", category: "", is_published: true, sort_order: 0 };
+const empty: Partial<Destination> = { name: "", slug: "", group_type: "destinasi", category: "", is_published: true, sort_order: 0, photo_url: null, video_url: null };
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 function Dashboard({ email }: { email: string }) {
@@ -232,17 +232,28 @@ function Dashboard({ email }: { email: string }) {
           <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden shadow-sm">
             {data.map((d) => (
               <div key={d.id} className="flex items-center gap-4 p-4 hover:bg-neutral-50/60 transition-colors">
-                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted relative">
                   {d.photo_url ? (
                     <img src={d.photo_url} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">No image</div>
                   )}
+                  {d.video_url && (
+                    <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-white rounded p-0.5 shadow-sm" title="Memiliki Video">
+                      <Play className="w-2.5 h-2.5 fill-white" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900 truncate">
-                    {d.name} {!d.is_published && <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">(draf)</span>}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-neutral-900 truncate">{d.name}</p>
+                    {!d.is_published && <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0">(draf)</span>}
+                    {d.video_url && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
+                        <Film className="w-3 h-3" /> Ada Video
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-neutral-500 mt-0.5 truncate">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
@@ -936,28 +947,94 @@ function SettingsPanel() {
 function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState<Partial<Destination>>(value);
   const [file, setFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
   const set = (k: keyof Destination, v: unknown) => setF((p) => ({ ...p, [k]: v }));
 
+  useEffect(() => {
+    if (videoFile) {
+      const url = URL.createObjectURL(videoFile);
+      setVideoPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setVideoPreview(null);
+    }
+  }, [videoFile]);
+
   async function save(e: FormEvent) {
-    e.preventDefault(); setBusy(true);
+    e.preventDefault();
+    setBusy(true);
+    setUploadStatus("Menyiapkan data...");
     try {
       let photo_url = f.photo_url ?? null;
       if (file) {
+        setUploadStatus("Mengunggah foto destinasi...");
         const path = `${Date.now()}-${slugify(file.name)}`;
         const up = await supabase.storage.from("destination-photos").upload(path, file, { contentType: file.type });
         if (up.error) throw up.error;
         photo_url = supabase.storage.from("destination-photos").getPublicUrl(path).data.publicUrl;
       }
+
+      let video_url = f.video_url?.trim() || null;
+      if (videoFile) {
+        setUploadStatus("Mengunggah file video...");
+        const path = `video-${Date.now()}-${slugify(videoFile.name)}`;
+        
+        // Coba upload ke bucket 'destination-videos' terlebih dahulu
+        let up = await supabase.storage.from("destination-videos").upload(path, videoFile, {
+          contentType: videoFile.type || "video/mp4",
+          upsert: true,
+        });
+
+        // Jika bucket destination-videos belum dibuat di Supabase, fallback ke destination-photos
+        if (up.error && (up.error.message.includes("not found") || (up.error as any).statusCode === "404" || up.error.message.includes("NoSuchBucket") || up.error.message.includes("does not exist"))) {
+          up = await supabase.storage.from("destination-photos").upload(path, videoFile, {
+            contentType: videoFile.type || "video/mp4",
+            upsert: true,
+          });
+          if (up.error) throw up.error;
+          video_url = supabase.storage.from("destination-photos").getPublicUrl(path).data.publicUrl;
+        } else if (up.error) {
+          throw up.error;
+        } else {
+          video_url = supabase.storage.from("destination-videos").getPublicUrl(path).data.publicUrl;
+        }
+      }
+
+      setUploadStatus("Menyimpan ke database...");
       const { id, ...rest } = f as Destination;
-      const row = { ...rest, slug: f.slug || slugify(f.name ?? ""), photo_url, updated_at: new Date().toISOString() };
+      const row = {
+        ...rest,
+        slug: f.slug || slugify(f.name ?? ""),
+        photo_url,
+        video_url,
+        updated_at: new Date().toISOString()
+      };
       delete (row as Record<string, unknown>)["created_at"];
-      const res = id ? await supabase.from("destinations").update(row).eq("id", id) : await supabase.from("destinations").insert(row);
-      if (res.error) throw res.error;
+
+      const res = id
+        ? await supabase.from("destinations").update(row).eq("id", id)
+        : await supabase.from("destinations").insert(row);
+
+      if (res.error) {
+        if (res.error.message.includes("video_url") || res.error.code === "42703") {
+          throw new Error(
+            "Kolom 'video_url' belum ada di database Supabase Anda.\n\n" +
+            "Silakan buka Supabase Dashboard > SQL Editor dan jalankan:\n" +
+            "ALTER TABLE public.destinations ADD COLUMN IF NOT EXISTS video_url text;"
+          );
+        }
+        throw res.error;
+      }
       onSaved();
     } catch (err) {
       alert((err as Error).message);
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+      setUploadStatus("");
+    }
   }
 
   const field = (k: keyof Destination, label: string, area = false) => (
@@ -996,11 +1073,100 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
           {field("contact", "Nomor Kontak / WhatsApp")}
           {field("instagram", "Akun Instagram")}
         </div>
+
+        {/* Upload Foto */}
         <label className="block text-xs font-semibold text-neutral-700">
           Foto Destinasi
           {f.photo_url && !file && <img src={f.photo_url} alt="" className="mt-2 h-32 w-48 rounded-md object-cover border" />}
           <input type="file" accept="image/*" className="mt-2 block text-xs" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
+
+        {/* Upload & Input Video Destinasi */}
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Video className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Video Destinasi (Opsional)</span>
+            </div>
+            {(f.video_url || videoFile) && (
+              <button
+                type="button"
+                onClick={() => { setVideoFile(null); set("video_url", null); }}
+                className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Hapus Video
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs text-neutral-500 leading-relaxed">
+            Unggah file video (MP4/WebM) ATAU masukkan tautan video YouTube / link video eksternal. Video akan ditampilkan di halaman detail destinasi.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                Unggah File Video (MP4 / WebM):
+              </label>
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/*"
+                className="block w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
+                onChange={(e) => {
+                  const selected = e.target.files?.[0] ?? null;
+                  if (selected) {
+                    if (selected.size > 52428800) {
+                      alert("Peringatan: Ukuran video melebihi 50MB. Disarankan mengompres video atau menggunakan link YouTube jika terjadi kendala saat upload.");
+                    }
+                    setVideoFile(selected);
+                  }
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                Atau Tautan Video (YouTube / Link Langsung):
+              </label>
+              <input
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                className={`${input} text-xs`}
+                value={(f.video_url as string) ?? ""}
+                onChange={(e) => {
+                  set("video_url", e.target.value);
+                  if (e.target.value) setVideoFile(null);
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Pratinjau Video */}
+          {(videoPreview || f.video_url) && (
+            <div className="mt-3 pt-3 border-t border-neutral-200">
+              <span className="block text-[11px] font-semibold text-neutral-600 mb-1.5">Pratinjau Video:</span>
+              <div className="max-w-md aspect-video rounded-lg overflow-hidden bg-black border border-neutral-300 shadow-inner">
+                {videoPreview ? (
+                  <video src={videoPreview} controls className="w-full h-full object-contain" />
+                ) : f.video_url ? (
+                  getYouTubeEmbedUrl(f.video_url) ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(f.video_url)!}
+                      title="Pratinjau Video"
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video src={f.video_url} controls className="w-full h-full object-contain">
+                      Format video tidak didukung.
+                    </video>
+                  )
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-6 text-xs text-neutral-700 pt-2">
           <label className="flex items-center gap-2 cursor-pointer font-medium">
             <input type="checkbox" checked={!!f.is_published} onChange={(e) => set("is_published", e.target.checked)} className="rounded" />
@@ -1011,12 +1177,13 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
             <input type="number" className={`${input} w-20 py-1`} value={f.sort_order ?? 0} onChange={(e) => set("sort_order", Number(e.target.value))} />
           </label>
         </div>
+
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <button type="button" className="rounded-md border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 cursor-pointer" onClick={onClose}>
             Batal
           </button>
           <button className={btn} disabled={busy || !f.name || !f.category}>
-            {busy ? "Menyimpan..." : "Simpan Destinasi"}
+            {busy ? (uploadStatus || "Menyimpan...") : "Simpan Destinasi"}
           </button>
         </div>
       </form>

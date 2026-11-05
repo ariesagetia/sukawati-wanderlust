@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteChrome } from "@/components/SiteChrome";
-import { fetchDestination } from "@/lib/supabase";
-import { MapPin, Clock, Phone, Tag, Instagram, ExternalLink, ArrowLeft } from "lucide-react";
+import { fetchDestination, getYouTubeEmbedUrl } from "@/lib/supabase";
+import { MapPin, Clock, Phone, Tag, Instagram, ExternalLink, ArrowLeft, Play } from "lucide-react";
 
 export const Route = createFileRoute("/destinasi/$slug")({
   head: ({ params }) => {
@@ -103,14 +103,57 @@ function Detail() {
         {d && (
           <div className="grid gap-10 md:grid-cols-3">
 
-            {/* Deskripsi */}
-            <div className="md:col-span-2">
-              <h2 className="text-xl font-bold text-neutral-800 mb-4 pb-3 border-b border-neutral-100">
-                Tentang Tempat Ini
-              </h2>
-              <p className="whitespace-pre-line leading-relaxed text-neutral-600 text-base">
-                {d.description || d.short_description || "Belum ada deskripsi untuk destinasi ini."}
-              </p>
+            {/* Deskripsi & Video */}
+            <div className="md:col-span-2 space-y-8">
+              <div>
+                <h2 className="text-xl font-bold text-neutral-800 mb-4 pb-3 border-b border-neutral-100">
+                  Tentang Tempat Ini
+                </h2>
+                <p className="whitespace-pre-line leading-relaxed text-neutral-600 text-base">
+                  {d.description || d.short_description || "Belum ada deskripsi untuk destinasi ini."}
+                </p>
+              </div>
+
+              {/* Video Destinasi */}
+              {d.video_url && (
+                <div className="pt-6 border-t border-neutral-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                      <Play className="w-5 h-5 fill-emerald-600 text-emerald-600 ml-0.5" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-neutral-900">
+                        Video Destinasi
+                      </h2>
+                      <p className="text-xs text-neutral-500">
+                        Cuplikan dokumentasi dan suasana di {d.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-2xl bg-neutral-950 border border-neutral-200/80 shadow-lg aspect-video relative group">
+                    {getYouTubeEmbedUrl(d.video_url) ? (
+                      <iframe
+                        src={getYouTubeEmbedUrl(d.video_url)!}
+                        title={`Video ${d.name}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="w-full h-full border-0"
+                      />
+                    ) : (
+                      <video
+                        src={d.video_url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-contain"
+                      >
+                        Peramban Anda tidak mendukung pemutar video.
+                      </video>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Sidebar info */}
