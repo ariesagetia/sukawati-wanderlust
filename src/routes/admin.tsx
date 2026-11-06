@@ -946,6 +946,35 @@ function SettingsPanel() {
   const [email, setEmail] = useState("");
   const [heroImage, setHeroImage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [showSql, setShowSql] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const SETTINGS_SQL = `-- Jalankan skrip ini di Supabase Dashboard > SQL Editor:
+create table if not exists public.settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
+);
+
+grant select on public.settings to anon, authenticated;
+grant insert, update, delete on public.settings to authenticated;
+grant all on public.settings to service_role;
+
+alter table public.settings enable row level security;
+
+drop policy if exists "Public reads settings" on public.settings;
+create policy "Public reads settings" on public.settings for select to anon, authenticated using (true);
+
+drop policy if exists "Admin upsert settings" on public.settings;
+create policy "Admin upsert settings" on public.settings for all to authenticated using (true) with check (true);
+
+insert into public.settings (key, value) values
+  ('whatsapp', '+6281381440325'),
+  ('email', 'info@sukawatihub.com'),
+  ('hero_image', '')
+on conflict (key) do update set value = excluded.value, updated_at = now();`;
 
   useEffect(() => {
     if (whatsapp) setWa(whatsapp);
@@ -959,17 +988,31 @@ function SettingsPanel() {
     if (heroImageSetting) setHeroImage(heroImageSetting);
   }, [heroImageSetting]);
 
+  function copySql() {
+    navigator.clipboard.writeText(SETTINGS_SQL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   async function save() {
     setBusy(true);
+    setSaveError(null);
+    setSaveSuccess(null);
     const { error: err1 } = await supabase.from("settings").upsert({ key: "whatsapp", value: wa }, { onConflict: "key" });
     const { error: err2 } = await supabase.from("settings").upsert({ key: "email", value: email }, { onConflict: "key" });
     const { error: err3 } = await supabase.from("settings").upsert({ key: "hero_image", value: heroImage }, { onConflict: "key" });
     
     setBusy(false);
-    if (err1 || err2 || err3) {
-      alert("Gagal menyimpan. Pastikan tabel 'settings' sudah dibuat (kolom: key, value). Error: " + (err1?.message || err2?.message || err3?.message));
+    const err = err1 || err2 || err3;
+    if (err) {
+      const errMsg = err.message || "Terjadi kesalahan saat menyimpan";
+      setSaveError(errMsg);
+      if (errMsg.includes("settings") || errMsg.includes("schema cache")) {
+        setShowSql(true);
+      }
     } else {
-      alert("Pengaturan website berhasil disimpan!");
+      setSaveSuccess("Pengaturan kontak dan banner website berhasil disimpan!");
+      setShowSql(false);
       refetchWa();
       refetchEmail();
       refetchHero();
@@ -979,31 +1022,89 @@ function SettingsPanel() {
   if (isLoadingWa || isLoadingEmail || isLoadingHero) return <p className="mt-8 text-muted-foreground">Memuat pengaturan...</p>;
 
   return (
-    <div className="mt-8 max-w-lg space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
-       <h2 className="text-xl font-bold text-neutral-900">Pengaturan Kontak & Banner</h2>
-       <p className="text-xs text-neutral-500">Sesuaikan informasi kontak dan gambar banner utama di halaman beranda.</p>
-       
-       <label className="block text-xs font-semibold text-neutral-700 pt-2">
-         Nomor WhatsApp Resmi
-         <input className={`${input} mt-1`} value={wa} onChange={e => setWa(e.target.value)} placeholder="+62 812-3456-7890" />
-         <span className="text-[11px] text-muted-foreground font-normal">Tampil di footer dan tombol WhatsApp mengambang.</span>
-       </label>
-       
-       <label className="block text-xs font-semibold text-neutral-700">
-         Alamat Email Resmi
-         <input className={`${input} mt-1`} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="info@sukawatihub.com" />
-         <span className="text-[11px] text-muted-foreground font-normal">Tampil di kolom kontak pada footer website.</span>
-       </label>
-       
-       <label className="block text-xs font-semibold text-neutral-700">
-         URL Foto Header Beranda
-         <input className={`${input} mt-1`} type="url" value={heroImage} onChange={e => setHeroImage(e.target.value)} placeholder="https://..." />
-         <span className="text-[11px] text-muted-foreground font-normal">Kosongkan jika ingin menggunakan foto default Sukawati.</span>
-       </label>
-       
-       <div className="pt-2">
-         <button className={btn} onClick={save} disabled={busy}>{busy ? "Menyimpan..." : "Simpan Perubahan"}</button>
-       </div>
+    <div className="mt-8 max-w-2xl space-y-5">
+      {/* Box Penampil Peringatan / Skrip SQL jika tabel belum dibuat */}
+      {showSql && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50/80 p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-amber-950 text-sm">Tabel Pengaturan Belum Dibuat di Supabase</h3>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                Tabel <code className="bg-amber-100 px-1 py-0.5 rounded font-mono font-semibold">public.settings</code> belum tersedia di database.
+                Silakan jalankan skrip SQL di bawah ini di <strong>Supabase Dashboard &gt; SQL Editor</strong> untuk mengaktifkan fitur pengaturan.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-neutral-700 bg-neutral-900 text-neutral-100 p-4 text-xs font-mono relative mt-2">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-700">
+              <span className="text-neutral-400 font-sans font-bold">Skrip SQL Tabel Pengaturan:</span>
+              <button
+                type="button"
+                onClick={copySql}
+                className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded font-sans transition-colors cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Tersalin!" : "Salin SQL"}
+              </button>
+            </div>
+            <pre className="max-h-52 overflow-y-auto whitespace-pre-wrap leading-relaxed text-[11px] text-emerald-300">
+              {SETTINGS_SQL}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="p-3.5 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center gap-2 border border-destructive/20">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span><strong>Gagal menyimpan:</strong> {saveError}</span>
+        </div>
+      )}
+
+      {saveSuccess && (
+        <div className="p-3.5 rounded-lg bg-emerald-50 text-emerald-800 text-xs flex items-center gap-2 border border-emerald-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{saveSuccess}</span>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-neutral-900">Pengaturan Kontak & Banner</h2>
+          <p className="text-xs text-neutral-500 mt-1">Sesuaikan informasi kontak dan gambar banner utama di halaman beranda.</p>
+        </div>
+        
+        <label className="block text-xs font-semibold text-neutral-700 pt-2">
+          Nomor WhatsApp Resmi
+          <input className={`${input} mt-1`} value={wa} onChange={e => setWa(e.target.value)} placeholder="+62 812-3456-7890" />
+          <span className="text-[11px] text-muted-foreground font-normal">Tampil di footer dan tombol WhatsApp mengambang.</span>
+        </label>
+        
+        <label className="block text-xs font-semibold text-neutral-700">
+          Alamat Email Resmi
+          <input className={`${input} mt-1`} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="info@sukawatihub.com" />
+          <span className="text-[11px] text-muted-foreground font-normal">Tampil di kolom kontak pada footer website.</span>
+        </label>
+        
+        <label className="block text-xs font-semibold text-neutral-700">
+          URL Foto Header Beranda
+          <input className={`${input} mt-1`} type="url" value={heroImage} onChange={e => setHeroImage(e.target.value)} placeholder="https://..." />
+          <span className="text-[11px] text-muted-foreground font-normal">Kosongkan jika ingin menggunakan foto default Sukawati.</span>
+        </label>
+        
+        <div className="pt-2 flex items-center justify-between">
+          <button className={btn} onClick={save} disabled={busy}>{busy ? "Menyimpan..." : "Simpan Perubahan"}</button>
+          <button
+            type="button"
+            onClick={() => setShowSql(!showSql)}
+            className="text-xs text-neutral-500 hover:text-emerald-700 cursor-pointer underline decoration-dotted"
+          >
+            {showSql ? "Sembunyikan Bantuan SQL" : "Bantuan Database SQL"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

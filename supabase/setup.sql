@@ -82,3 +82,24 @@ insert into public.destinations (slug, name, group_type, category, short_descrip
 
 -- SETELAH membuat akun admin di Authentication > Users, jalankan:
 -- insert into public.user_roles (user_id, role) select id, 'admin' from auth.users where email = 'EMAIL_ADMIN_ANDA';
+
+-- Tabel Pengaturan Kontak & Banner Website
+create table if not exists public.settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
+);
+grant select on public.settings to anon, authenticated;
+grant insert, update, delete on public.settings to authenticated;
+grant all on public.settings to service_role;
+alter table public.settings enable row level security;
+drop policy if exists "Public reads settings" on public.settings;
+create policy "Public reads settings" on public.settings for select to anon, authenticated using (true);
+drop policy if exists "Admin upsert settings" on public.settings;
+create policy "Admin upsert settings" on public.settings for all to authenticated using (true) with check (true);
+insert into public.settings (key, value) values
+  ('whatsapp', '+6281381440325'),
+  ('email', 'info@sukawatihub.com'),
+  ('hero_image', '')
+on conflict (key) do nothing;
+
