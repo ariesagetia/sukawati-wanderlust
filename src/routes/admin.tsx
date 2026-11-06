@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
 import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff, Images, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff, Images, ChevronLeft, ChevronRight, Star, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -1034,9 +1034,41 @@ function SettingsPanel() {
   );
 }
 
+const TIME_SLOTS = [
+  "05:00", "05:30", "06:00", "06:30", "07:00", "07:30",
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
+  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+  "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
+  "20:00", "20:30", "21:00", "21:30", "22:00", "22:30",
+  "23:00", "23:30", "00:00"
+];
+
+const PRESET_HOURS = [
+  { label: "08:00 - 17:00 WITA", value: "08:00 - 17:00 WITA" },
+  { label: "08:00 - 18:00 WITA", value: "08:00 - 18:00 WITA" },
+  { label: "09:00 - 17:00 WITA", value: "09:00 - 17:00 WITA" },
+  { label: "09:00 - 18:00 WITA", value: "09:00 - 18:00 WITA" },
+  { label: "10:00 - 21:00 WITA", value: "10:00 - 21:00 WITA" },
+  { label: "06:00 - 18:00 WITA", value: "06:00 - 18:00 WITA" },
+  { label: "24 Jam (Setiap Hari)", value: "Setiap hari (24 Jam)" },
+  { label: "Sesuai Jadwal Pertunjukan", value: "Sesuai jadwal pertunjukan" },
+];
+
 function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState<Partial<Destination>>(value);
   
+  // State Pilihan Jam Buka
+  const [openTime, setOpenTime] = useState(() => {
+    const match = (value.opening_hours ?? "").match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/);
+    return match ? match[1] : "08:00";
+  });
+  const [closeTime, setCloseTime] = useState(() => {
+    const match = (value.opening_hours ?? "").match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/);
+    return match ? match[2] : "17:00";
+  });
+  const [timeZone, setTimeZone] = useState("WITA");
+
   // State Foto Utama
   const [file, setFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -1090,6 +1122,24 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
       setVideoPreview(null);
     }
   }, [videoFile]);
+
+  // Fungsi Jam Buka: Ubah rentang waktu
+  function handleTimeRangeChange(newOpen: string, newClose: string, newZone = timeZone) {
+    setOpenTime(newOpen);
+    setCloseTime(newClose);
+    const zoneStr = newZone ? ` ${newZone}` : "";
+    set("opening_hours", `${newOpen} - ${newClose}${zoneStr}`);
+  }
+
+  // Fungsi Jam Buka: Pilih preset cepat
+  function handlePresetSelect(presetVal: string) {
+    set("opening_hours", presetVal);
+    const match = presetVal.match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/);
+    if (match) {
+      setOpenTime(match[1]);
+      setCloseTime(match[2]);
+    }
+  }
 
   // Fungsi Hapus Foto Utama
   function handleRemovePhoto() {
@@ -1290,7 +1340,116 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
         <div className="grid gap-4 sm:grid-cols-2">
           {field("address", "Alamat")}
           {field("maps_url", "Tautan Google Maps")}
-          {field("opening_hours", "Jam Buka")}
+
+          {/* ── PILIHAN JAM BUKA & OPERASIONAL ── */}
+          <div className="col-span-1 sm:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50/70 p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-neutral-800">
+                <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Pilihan Jam Buka & Operasional</span>
+              </label>
+              {f.opening_hours && (
+                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+                  {f.opening_hours}
+                </span>
+              )}
+            </div>
+
+            {/* Pilihan Cepat Jam Populer */}
+            <div>
+              <span className="text-[11px] font-medium text-neutral-500 block mb-1.5">
+                Pilihan Jam Populer (Klik langsung untuk memilih):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_HOURS.map((preset) => {
+                  const isSelected = (f.opening_hours ?? "").trim() === preset.value;
+                  return (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => handlePresetSelect(preset.value)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                          : "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pemilih Rentang Jam (Buka - Tutup) */}
+            <div className="pt-2 border-t border-neutral-200">
+              <span className="text-[11px] font-medium text-neutral-500 block mb-1.5">
+                Atau Tentukan Pilihan Jam (Buka & Tutup):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 items-center">
+                <div>
+                  <span className="text-[10px] font-medium text-neutral-500 block mb-1">Jam Buka:</span>
+                  <select
+                    className={`${input} py-1.5 text-xs bg-white`}
+                    value={openTime}
+                    onChange={(e) => handleTimeRangeChange(e.target.value, closeTime)}
+                  >
+                    {TIME_SLOTS.map((t) => (
+                      <option key={`open-${t}`} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-medium text-neutral-500 block mb-1">Jam Tutup:</span>
+                  <select
+                    className={`${input} py-1.5 text-xs bg-white`}
+                    value={closeTime}
+                    onChange={(e) => handleTimeRangeChange(openTime, e.target.value)}
+                  >
+                    {TIME_SLOTS.map((t) => (
+                      <option key={`close-${t}`} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <span className="text-[10px] font-medium text-neutral-500 block mb-1">Zona Waktu:</span>
+                  <select
+                    className={`${input} py-1.5 text-xs bg-white`}
+                    value={timeZone}
+                    onChange={(e) => {
+                      setTimeZone(e.target.value);
+                      handleTimeRangeChange(openTime, closeTime, e.target.value);
+                    }}
+                  >
+                    <option value="WITA">WITA (Bali)</option>
+                    <option value="WIB">WIB (Barat)</option>
+                    <option value="WIT">WIT (Timur)</option>
+                    <option value="">Tanpa Zona</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Input Nilai yang Disimpan (Bisa ditambah catatan tambahan jika ada) */}
+            <div className="pt-1">
+              <label className="text-[10px] font-medium text-neutral-500 block mb-1">
+                Keterangan Teks Jam Buka yang Tersimpan (Dapat disesuaikan jika ada catatan tambahan):
+              </label>
+              <input
+                className={`${input} py-1.5 text-xs`}
+                value={(f.opening_hours as string) ?? ""}
+                onChange={(e) => set("opening_hours", e.target.value)}
+                placeholder="Contoh: 08:00 - 17:00 WITA atau 24 Jam"
+              />
+            </div>
+          </div>
+
           {field("price", "Harga Tiket / Biaya")}
           {field("contact", "Nomor Kontak / WhatsApp")}
           {field("instagram", "Akun Instagram")}
