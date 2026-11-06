@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
 import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon } from "lucide-react";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -90,6 +90,7 @@ function AdminPage() {
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -154,7 +155,24 @@ function Login() {
       </label>
       <label className="block text-xs font-medium text-neutral-700">
         Kata Sandi
-        <input className={`${input} mt-1`} type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <div className="relative mt-1">
+          <input
+            className={`${input} pr-10`}
+            type={showPassword ? "text" : "password"}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            aria-label={showPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 transition-colors p-0.5 cursor-pointer"
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
       </label>
       {err && <p className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-md">{err}</p>}
       <button className={`${btn} w-full`} disabled={busy}>{busy ? "Memproses..." : "Masuk"}</button>
@@ -319,6 +337,7 @@ function SuperAdminAdminsPanel({ currentEmail }: { currentEmail: string }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState("");
   const [addSuccess, setAddSuccess] = useState("");
@@ -326,6 +345,7 @@ function SuperAdminAdminsPanel({ currentEmail }: { currentEmail: string }) {
   // Modal Reset Password
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
   const [resetError, setResetError] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
@@ -772,15 +792,25 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
 
               <label className="block text-xs font-semibold text-neutral-700">
                 Kata Sandi Awal (Minimal 6 karakter)
-                <input
-                  type="password"
-                  className={`${input} mt-1`}
-                  placeholder="Minimal 6 karakter"
-                  minLength={6}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
+                <div className="relative mt-1">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    className={`${input} pr-10`}
+                    placeholder="Minimal 6 karakter"
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={showNewPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 transition-colors p-0.5 cursor-pointer"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </label>
 
               {addError && (
@@ -840,15 +870,25 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
             <form onSubmit={handleDirectResetSubmit} className="space-y-3 pt-2">
               <label className="block text-xs font-semibold text-neutral-700">
                 Masukkan Kata Sandi Baru (Langsung Aktif)
-                <input
-                  type="password"
-                  className={`${input} mt-1`}
-                  placeholder="Ketik kata sandi baru (min 6 karakter)"
-                  minLength={6}
-                  value={resetPassword}
-                  onChange={(e) => setResetPassword(e.target.value)}
-                  required
-                />
+                <div className="relative mt-1">
+                  <input
+                    type={showResetPassword ? "text" : "password"}
+                    className={`${input} pr-10`}
+                    placeholder="Ketik kata sandi baru (min 6 karakter)"
+                    minLength={6}
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={showResetPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 transition-colors p-0.5 cursor-pointer"
+                  >
+                    {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </label>
 
               {resetError && (
