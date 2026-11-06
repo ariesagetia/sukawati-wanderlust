@@ -23,6 +23,7 @@ export type Destination = {
   instagram: string | null;
   photo_url: string | null;
   video_url: string | null;
+  gallery_urls?: string[] | null;
   sort_order: number;
   is_published: boolean;
 };
@@ -56,6 +57,12 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 1,
     is_published: true,
   },
@@ -75,6 +82,12 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1555400038-63f5ba517a47?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1604999333679-b86d54738315?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 2,
     is_published: true,
   },
@@ -94,6 +107,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1530639834083-9a21b4474326?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 3,
     is_published: true,
   },
@@ -113,6 +131,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 4,
     is_published: true,
   },
@@ -132,6 +155,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1582562124811-c09040d0a901?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 5,
     is_published: true,
   },
@@ -151,6 +179,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 6,
     is_published: true,
   },
@@ -170,6 +203,12 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 7,
     is_published: true,
   },
@@ -189,6 +228,12 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 8,
     is_published: true,
   },
@@ -208,6 +253,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 9,
     is_published: true,
   },
@@ -227,6 +277,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 10,
     is_published: true,
   },
@@ -246,6 +301,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1555400038-63f5ba517a47?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 11,
     is_published: true,
   },
@@ -265,6 +325,11 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     instagram: null,
     photo_url: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80",
     video_url: null,
+    gallery_urls: [
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=1000&q=80",
+    ],
     sort_order: 12,
     is_published: true,
   },
@@ -287,7 +352,13 @@ export async function fetchDestinations(all = false) {
       // Periksa apakah database sudah dimigrasi ke 12 destinasi resmi yang baru
       const hasOfficial = data.some(d => d.slug === "homestay-wayan-rutawan" || d.slug === "dsanga-bistro-pool-space");
       if (hasOfficial) {
-        return data as Destination[];
+        return (data as Destination[]).map(d => {
+          const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === d.slug);
+          return {
+            ...d,
+            gallery_urls: (d.gallery_urls && d.gallery_urls.length > 0) ? d.gallery_urls : (officialMatch?.gallery_urls || []),
+          };
+        });
       }
 
       // Jika database masih menyimpan data lama (yang beberapa fotonya kosong),
@@ -303,6 +374,7 @@ export async function fetchDestinations(all = false) {
             id: match.id || official.id,
             photo_url: match.photo_url || official.photo_url,
             video_url: match.video_url || official.video_url,
+            gallery_urls: (match.gallery_urls && match.gallery_urls.length > 0) ? match.gallery_urls : official.gallery_urls,
           };
         }
         return official;
@@ -322,9 +394,13 @@ export async function fetchDestination(slug: string) {
     if (data) {
       // Pastikan jika photo_url di db kosong, gunakan fallback photo resmi
       const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === slug);
+      const gallery = (data.gallery_urls && Array.isArray(data.gallery_urls) && data.gallery_urls.length > 0)
+        ? data.gallery_urls
+        : (officialMatch?.gallery_urls || []);
       return {
         ...data,
         photo_url: data.photo_url || officialMatch?.photo_url || null,
+        gallery_urls: gallery,
       } as Destination;
     }
     if (error) console.warn("Supabase fetchDestination error:", error);

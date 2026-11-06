@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { SiteChrome } from "@/components/SiteChrome";
 import { fetchDestination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { MapPin, Clock, Phone, Tag, Instagram, ExternalLink, ArrowLeft, Play } from "lucide-react";
+import { MapPin, Clock, Phone, Tag, Instagram, ExternalLink, ArrowLeft, Play, Images, Camera, ChevronLeft, ChevronRight, X, Maximize2 } from "lucide-react";
 
 export const Route = createFileRoute("/destinasi/$slug")({
   head: ({ params }) => {
@@ -33,6 +34,33 @@ function Detail() {
     queryKey: ["destination", slug],
     queryFn: () => fetchDestination(slug),
   });
+
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const gallery = d?.gallery_urls?.filter(Boolean) || [];
+
+  // Navigasi keyboard & scroll lock untuk Lightbox
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIdx(null);
+      if (e.key === "ArrowLeft") {
+        setLightboxIdx((prev) => (prev !== null && prev > 0 ? prev - 1 : gallery.length - 1));
+      }
+      if (e.key === "ArrowRight") {
+        setLightboxIdx((prev) => (prev !== null && prev < gallery.length - 1 ? prev + 1 : 0));
+      }
+    };
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [lightboxIdx, gallery.length]);
 
   return (
     <SiteChrome>
@@ -113,6 +141,52 @@ function Detail() {
                   {d.description || d.short_description || "Belum ada deskripsi untuk destinasi ini."}
                 </p>
               </div>
+
+              {/* ── GALERI FOTO DESTINASI ── */}
+              {gallery.length > 0 && (
+                <div className="pt-6 border-t border-neutral-100">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                      <Images className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-neutral-900">
+                        Galeri Foto Destinasi
+                      </h2>
+                      <p className="text-xs text-neutral-500">
+                        Dokumentasi visual dan pesona di {d.name} ({gallery.length} foto)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Grid Galeri */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+                    {gallery.map((imgUrl, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setLightboxIdx(idx)}
+                        className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-neutral-100 border border-neutral-200/70 shadow-sm hover:shadow-md transition-all cursor-pointer text-left"
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`${d.name} - Foto ${idx + 1}`}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
+                          <span className="text-[11px] font-semibold text-white drop-shadow">
+                            Foto #{idx + 1}
+                          </span>
+                          <span className="p-1.5 rounded-full bg-white/25 backdrop-blur-md text-white shadow">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Video Destinasi */}
               {d.video_url && (
@@ -212,6 +286,100 @@ function Detail() {
           </div>
         )}
       </div>
+
+      {/* ── MODAL LIGHTBOX FOTO FULLSCREEN ── */}
+      {lightboxIdx !== null && gallery[lightboxIdx] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 transition-all"
+          onClick={() => setLightboxIdx(null)}
+        >
+          {/* Header Kontrol */}
+          <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white z-10 px-2">
+            <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-medium border border-white/10 shadow-lg">
+              <Camera className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Foto {lightboxIdx + 1} dari {gallery.length}</span>
+              <span className="text-white/40">·</span>
+              <span className="text-white/70 max-w-[200px] sm:max-w-xs truncate">{d?.name}</span>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIdx(null);
+              }}
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer border border-white/10 shadow-lg"
+              title="Tutup (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Tombol Sebelumnya */}
+          {gallery.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIdx((prev) => (prev !== null && prev > 0 ? prev - 1 : gallery.length - 1));
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 transition-all hover:scale-105 z-10 cursor-pointer shadow-xl"
+              title="Foto sebelumnya (Panah Kiri)"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
+
+          {/* Gambar Utama */}
+          <div
+            className="max-h-[80vh] max-w-[92vw] flex items-center justify-center relative select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={gallery[lightboxIdx]}
+              alt={`${d?.name} - Foto ${lightboxIdx + 1}`}
+              className="max-h-[80vh] max-w-[92vw] object-contain rounded-xl shadow-2xl"
+            />
+          </div>
+
+          {/* Tombol Selanjutnya */}
+          {gallery.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIdx((prev) => (prev !== null && prev < gallery.length - 1 ? prev + 1 : 0));
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 transition-all hover:scale-105 z-10 cursor-pointer shadow-xl"
+              title="Foto selanjutnya (Panah Kanan)"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
+
+          {/* Thumbnail Strip di Bawah */}
+          {gallery.length > 1 && (
+            <div
+              className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto py-2 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex gap-2 p-1.5 rounded-2xl bg-black/70 backdrop-blur-lg border border-white/10 max-w-full overflow-x-auto">
+                {gallery.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setLightboxIdx(i)}
+                    className={`h-12 w-16 shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                      i === lightboxIdx ? "border-emerald-400 scale-105 opacity-100" : "border-transparent opacity-50 hover:opacity-80"
+                    }`}
+                  >
+                    <img src={img} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </SiteChrome>
   );
 }

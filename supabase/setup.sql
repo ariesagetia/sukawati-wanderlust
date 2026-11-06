@@ -34,6 +34,7 @@ create table public.destinations (
   instagram text,
   photo_url text,
   video_url text,
+  gallery_urls text[] default '{}'::text[],
   sort_order int not null default 0,
   is_published boolean not null default true,
   created_at timestamptz not null default now(),

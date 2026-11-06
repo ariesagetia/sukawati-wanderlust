@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
 import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff, Images, ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -185,7 +185,7 @@ function Login() {
   );
 }
 
-const empty: Partial<Destination> = { name: "", slug: "", group_type: "destinasi", category: "", is_published: true, sort_order: 0, photo_url: null, video_url: null };
+const empty: Partial<Destination> = { name: "", slug: "", group_type: "destinasi", category: "", is_published: true, sort_order: 0, photo_url: null, video_url: null, gallery_urls: [] };
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 function Dashboard({ email }: { email: string }) {
@@ -287,6 +287,11 @@ function Dashboard({ email }: { email: string }) {
                     {d.video_url && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
                         <Film className="w-3 h-3" /> Ada Video
+                      </span>
+                    )}
+                    {(d.gallery_urls?.length ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
+                        <Images className="w-3 h-3" /> {d.gallery_urls?.length} Foto
                       </span>
                     )}
                   </div>
@@ -1032,10 +1037,17 @@ function SettingsPanel() {
 function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState<Partial<Destination>>(value);
   
-  // State Foto
+  // State Foto Utama
   const [file, setFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // State Galeri Foto (Multiple)
+  const [gallery, setGallery] = useState<string[]>(Array.isArray(value.gallery_urls) ? value.gallery_urls.filter(Boolean) : []);
+  const [newGalleryFiles, setNewGalleryFiles] = useState<File[]>([]);
+  const [newGalleryPreviews, setNewGalleryPreviews] = useState<string[]>([]);
+  const [urlInput, setUrlInput] = useState("");
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // State Video
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -1057,6 +1069,17 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
     }
   }, [file]);
 
+  // Pratinjau Foto Galeri Baru
+  useEffect(() => {
+    if (newGalleryFiles.length > 0) {
+      const urls = newGalleryFiles.map((file) => URL.createObjectURL(file));
+      setNewGalleryPreviews(urls);
+      return () => urls.forEach((u) => URL.revokeObjectURL(u));
+    } else {
+      setNewGalleryPreviews([]);
+    }
+  }, [newGalleryFiles]);
+
   // Pratinjau Video saat file baru dipilih
   useEffect(() => {
     if (videoFile) {
@@ -1068,13 +1091,63 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
     }
   }, [videoFile]);
 
-  // Fungsi Hapus Foto
+  // Fungsi Hapus Foto Utama
   function handleRemovePhoto() {
     setFile(null);
     set("photo_url", null);
     if (photoInputRef.current) {
       photoInputRef.current.value = "";
     }
+  }
+
+  // Fungsi Galeri Foto: Tambah dari input file multiple
+  function handleAddGalleryFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const selected = Array.from(e.target.files);
+      setNewGalleryFiles((prev) => [...prev, ...selected]);
+    }
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
+  }
+
+  // Fungsi Galeri Foto: Tambah dari tautan URL
+  function handleAddPhotoUrl() {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      alert("Masukkan tautan gambar yang valid (diawali https:// atau http://)");
+      return;
+    }
+    setGallery((prev) => [...prev, trimmed]);
+    setUrlInput("");
+  }
+
+  // Fungsi Galeri Foto: Hapus foto tersimpan
+  function handleRemoveExistingGalleryPhoto(index: number) {
+    setGallery((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // Fungsi Galeri Foto: Batalkan foto baru yang dipilih
+  function handleRemoveNewGalleryFile(index: number) {
+    setNewGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // Fungsi Galeri Foto: Ubah urutan foto (geser kiri/kanan)
+  function handleMoveGalleryPhoto(index: number, direction: -1 | 1) {
+    setGallery((prev) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = temp;
+      return next;
+    });
+  }
+
+  // Fungsi Galeri Foto: Jadikan sebagai foto utama (Cover)
+  function handleSetAsMainPhoto(url: string) {
+    set("photo_url", url);
+    alert("Foto ini berhasil dipilih sebagai Foto Utama (Cover) destinasi.");
   }
 
   // Fungsi Hapus Video
@@ -1091,29 +1164,45 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
     setBusy(true);
     setUploadStatus("Menyiapkan data...");
     try {
-      // 1. Tangani Foto Destinasi
+      // 1. Tangani Foto Utama Destinasi
       let photo_url = f.photo_url ?? null;
       if (file) {
-        setUploadStatus("Mengunggah foto destinasi...");
+        setUploadStatus("Mengunggah foto utama...");
         const path = `${Date.now()}-${slugify(file.name)}`;
         const up = await supabase.storage.from("destination-photos").upload(path, file, { contentType: file.type });
         if (up.error) throw up.error;
         photo_url = supabase.storage.from("destination-photos").getPublicUrl(path).data.publicUrl;
       }
 
-      // 2. Tangani Video Destinasi
+      // 2. Tangani Unggah Foto Galeri Baru (Multiple)
+      let uploadedGalleryUrls: string[] = [];
+      if (newGalleryFiles.length > 0) {
+        for (let i = 0; i < newGalleryFiles.length; i++) {
+          const gFile = newGalleryFiles[i];
+          setUploadStatus(`Mengunggah foto galeri (${i + 1}/${newGalleryFiles.length})...`);
+          const path = `gallery-${Date.now()}-${i}-${slugify(gFile.name)}`;
+          const up = await supabase.storage.from("destination-photos").upload(path, gFile, {
+            contentType: gFile.type || "image/jpeg",
+          });
+          if (up.error) throw up.error;
+          const url = supabase.storage.from("destination-photos").getPublicUrl(path).data.publicUrl;
+          uploadedGalleryUrls.push(url);
+        }
+      }
+
+      const finalGalleryUrls = [...gallery, ...uploadedGalleryUrls];
+
+      // 3. Tangani Video Destinasi
       let video_url = f.video_url?.trim() || null;
       if (videoFile) {
         setUploadStatus("Mengunggah file video...");
         const path = `video-${Date.now()}-${slugify(videoFile.name)}`;
         
-        // Coba upload ke bucket 'destination-videos' terlebih dahulu
         let up = await supabase.storage.from("destination-videos").upload(path, videoFile, {
           contentType: videoFile.type || "video/mp4",
           upsert: true,
         });
 
-        // Jika bucket destination-videos belum dibuat di Supabase, fallback ke destination-photos
         if (up.error && (up.error.message.includes("not found") || (up.error as any).statusCode === "404" || up.error.message.includes("NoSuchBucket") || up.error.message.includes("does not exist"))) {
           up = await supabase.storage.from("destination-photos").upload(path, videoFile, {
             contentType: videoFile.type || "video/mp4",
@@ -1135,6 +1224,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
         slug: f.slug || slugify(f.name ?? ""),
         photo_url,
         video_url,
+        gallery_urls: finalGalleryUrls,
         updated_at: new Date().toISOString()
       };
       delete (row as Record<string, unknown>)["created_at"];
@@ -1144,6 +1234,13 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
         : await supabase.from("destinations").insert(row);
 
       if (res.error) {
+        if (res.error.message.includes("gallery_urls") || res.error.code === "42703") {
+          throw new Error(
+            "Kolom 'gallery_urls' belum ada di database Supabase Anda.\n\n" +
+            "Silakan buka Supabase Dashboard > SQL Editor dan jalankan:\n" +
+            "ALTER TABLE public.destinations ADD COLUMN IF NOT EXISTS gallery_urls text[] DEFAULT '{}'::text[];"
+          );
+        }
         if (res.error.message.includes("video_url") || res.error.code === "42703") {
           throw new Error(
             "Kolom 'video_url' belum ada di database Supabase Anda.\n\n" +
@@ -1251,7 +1348,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
 
           <div>
             <label className="block text-xs font-semibold text-neutral-700 mb-1">
-              {(photoPreview || f.photo_url) ? "Ganti Berkas Foto:" : "Pilih Berkas Foto:"}
+              {(photoPreview || f.photo_url) ? "Ganti Berkas Foto Utama:" : "Pilih Berkas Foto Utama:"}
             </label>
             <input
               ref={photoInputRef}
@@ -1260,6 +1357,171 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
               className="block w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
+          </div>
+        </div>
+
+        {/* ── BAGIAN GALERI FOTO DESTINASI (TAMBAH, HAPUS, EDIT / GESER URUTAN) ── */}
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Images className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">
+                Galeri Foto Destinasi ({gallery.length + newGalleryFiles.length} Foto)
+              </span>
+            </div>
+            {(gallery.length > 0 || newGalleryFiles.length > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Kosongkan semua foto galeri destinasi ini?")) {
+                    setGallery([]);
+                    setNewGalleryFiles([]);
+                  }
+                }}
+                className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Hapus Semua
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs text-neutral-500 leading-relaxed">
+            Foto-foto ini akan tampil sebagai galeri foto interaktif di halaman destinasi. Anda bisa mengunggah berkas foto (bisa banyak sekaligus), mengubah urutan, menjadikannya foto utama, atau menghapus foto.
+          </p>
+
+          {/* Daftar Foto Saat Ini & Foto Baru */}
+          {(gallery.length > 0 || newGalleryPreviews.length > 0) ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1">
+              {/* Foto yang sudah tersimpan */}
+              {gallery.map((url, idx) => (
+                <div key={`existing-${idx}`} className="group relative rounded-xl overflow-hidden border border-neutral-300 bg-neutral-200 shadow-sm aspect-square">
+                  <img src={url} alt={`Galeri ${idx + 1}`} className="w-full h-full object-cover" />
+                  
+                  {/* Badge Nomor */}
+                  <span className="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                    #{idx + 1}
+                  </span>
+
+                  {/* Overlay Kontrol Edit, Geser, Hapus */}
+                  <div className="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingGalleryPhoto(idx)}
+                        title="Hapus foto ini dari galeri"
+                        className="bg-rose-600 text-white rounded p-1 hover:bg-rose-700 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveGalleryPhoto(idx, -1)}
+                          title="Geser ke kiri / ke atas"
+                          className="bg-white/20 hover:bg-white/40 disabled:opacity-20 text-white rounded p-1 transition-colors cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === gallery.length - 1}
+                          onClick={() => handleMoveGalleryPhoto(idx, 1)}
+                          title="Geser ke kanan / ke bawah"
+                          className="bg-white/20 hover:bg-white/40 disabled:opacity-20 text-white rounded p-1 transition-colors cursor-pointer"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSetAsMainPhoto(url)}
+                        title="Jadikan Foto Utama (Cover)"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-medium px-2 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 shadow"
+                      >
+                        <Star className="w-3 h-3 fill-white text-white" /> Cover
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Foto baru yang dipilih (Pending upload) */}
+              {newGalleryPreviews.map((url, idx) => (
+                <div key={`new-${idx}`} className="group relative rounded-xl overflow-hidden border-2 border-emerald-500 bg-neutral-200 shadow-sm aspect-square">
+                  <img src={url} alt={`Baru ${idx + 1}`} className="w-full h-full object-cover" />
+                  <span className="absolute top-1.5 left-1.5 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                    Baru
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveNewGalleryFile(idx)}
+                    title="Batalkan foto ini"
+                    className="absolute top-1.5 right-1.5 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-5 text-center rounded-lg border border-dashed border-neutral-300 bg-white/60 text-xs text-neutral-400">
+              Belum ada foto di galeri. Pilih beberapa foto dari perangkat Anda atau tambahkan tautan gambar di bawah ini.
+            </div>
+          )}
+
+          {/* Kontrol Tambah Foto Galeri */}
+          <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-neutral-200/80">
+            {/* Opsi 1: Unggah Berkas Foto (Multiple) */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                + Unggah Berkas Foto Galeri (Bisa Banyak Sekaligus):
+              </label>
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="block w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
+                onChange={handleAddGalleryFiles}
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Pilih satu atau beberapa foto (JPG, PNG, WebP). Akan otomatis diunggah saat disimpan.
+              </span>
+            </div>
+
+            {/* Opsi 2: Tambah via URL Gambar */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                Atau Tambah Tautan / URL Foto:
+              </label>
+              <div className="flex gap-1.5">
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/... atau tautan gambar"
+                  className={`${input} text-xs flex-1`}
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddPhotoUrl();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddPhotoUrl}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shrink-0"
+                >
+                  + Tambah
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
