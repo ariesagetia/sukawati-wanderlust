@@ -23,7 +23,11 @@ export const Route = createFileRoute("/admin")({
 const input = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors";
 const btn = "rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer";
 
-const SUPER_ADMIN_EMAILS = ["ariesagetia@gmail.com", "ariesagetia@pnb.ac.id"];
+const SUPER_ADMIN_EMAILS = [
+  "ariesagetia@gmail.com",
+  "ariesagetia@pnb.ac.id",
+  "admin@sukawatihub.com",
+];
 const isSuperAdminEmail = (email?: string | null) =>
   !!email && SUPER_ADMIN_EMAILS.includes(email.toLowerCase().trim());
 
@@ -39,14 +43,23 @@ function AdminPage() {
 
   useEffect(() => {
     if (!session) return setIsAdmin(null);
-    supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }).then(({ data }) => {
-      // Jika salah satu email super admin, selalu beri akses admin
-      if (isSuperAdminEmail(session.user.email)) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(!!data);
-      }
-    });
+    if (isSuperAdminEmail(session.user.email)) {
+      setIsAdmin(true);
+      return;
+    }
+    supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("has_role error:", error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(!!data);
+        }
+      })
+      .catch((err) => {
+        console.error("has_role catch:", err);
+        setIsAdmin(false);
+      });
   }, [session]);
 
   return (
@@ -85,8 +98,13 @@ function Login() {
 
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setErr(""); setMsg("");
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) setErr("Email atau kata sandi salah. Silakan coba lagi.");
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword });
+    if (error) {
+      console.error("Login error:", error);
+      setErr("Email atau kata sandi salah. Silakan periksa kembali.");
+    }
     setBusy(false);
   }
 
@@ -320,7 +338,7 @@ function SuperAdminAdminsPanel({ currentEmail }: { currentEmail: string }) {
 create extension if not exists pgcrypto with schema extensions;
 
 insert into public.user_roles (user_id, role)
-select id, 'admin'::public.app_role from auth.users where lower(email) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id')
+select id, 'admin'::public.app_role from auth.users where lower(email) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id', 'admin@sukawatihub.com')
 on conflict (user_id, role) do nothing;
 
 create or replace function public.get_all_admins()
@@ -330,7 +348,7 @@ language plpgsql security definer set search_path = public, auth as $$
 declare _caller text;
 begin
   select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
-  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id', 'admin@sukawatihub.com') then
     raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
   end if;
   return query select u.id, u.email::text, r.role::text, u.created_at, u.last_sign_in_at
@@ -345,7 +363,7 @@ returns json language plpgsql security definer set search_path = public, auth, e
 declare _new_id uuid; _caller text;
 begin
   select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
-  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id', 'admin@sukawatihub.com') then
     raise exception 'Akses ditolak: Hanya Super Admin yang berhak.';
   end if;
   if exists (select 1 from auth.users u where lower(u.email) = lower(trim(_email))) then
@@ -371,7 +389,7 @@ returns json language plpgsql security definer set search_path = public, auth, e
 declare _caller text;
 begin
   select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
-  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id', 'admin@sukawatihub.com') then
     raise exception 'Akses ditolak.';
   end if;
   update auth.users set encrypted_password = extensions.crypt(_new_password, extensions.gen_salt('bf')), email_confirmed_at = coalesce(email_confirmed_at, now()), updated_at = now()
@@ -387,10 +405,10 @@ returns json language plpgsql security definer set search_path = public, auth as
 declare _tid uuid; _caller text;
 begin
   select lower(u.email) into _caller from auth.users u where u.id = auth.uid();
-  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  if _caller is null or _caller not in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id', 'admin@sukawatihub.com') then
     raise exception 'Akses ditolak.';
   end if;
-  if lower(trim(_target_email)) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id') then
+  if lower(trim(_target_email)) in ('ariesagetia@gmail.com', 'ariesagetia@pnb.ac.id', 'admin@sukawatihub.com') then
     raise exception 'Tidak dapat menghapus Super Admin.';
   end if;
   select u.id into _tid from auth.users u where lower(u.email) = lower(trim(_target_email));
@@ -422,6 +440,12 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
           {
             id: "super-admin-2",
             email: "ariesagetia@pnb.ac.id",
+            role: "admin",
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: "super-admin-3",
+            email: "admin@sukawatihub.com",
             role: "admin",
             created_at: new Date().toISOString(),
           },
@@ -577,7 +601,7 @@ grant execute on function public.admin_delete_admin(text) to authenticated;`;
           <div>
             <h3 className="font-bold text-emerald-950 text-base">Hak Akses Super Admin: {currentEmail}</h3>
             <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-              Akun <strong>ariesagetia@gmail.com</strong> dan <strong>ariesagetia@pnb.ac.id</strong> memiliki wewenang eksklusif untuk <strong>menambahkan akun admin baru</strong>, 
+              Akun <strong>ariesagetia@gmail.com</strong>, <strong>ariesagetia@pnb.ac.id</strong>, dan <strong>admin@sukawatihub.com</strong> memiliki wewenang eksklusif untuk <strong>menambahkan akun admin baru</strong>, 
               <strong> mereset kata sandi admin</strong>, dan mengelola seluruh hak akses staf website Sukawati Hub.
             </p>
           </div>
