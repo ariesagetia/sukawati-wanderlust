@@ -40,6 +40,21 @@ export const GROUPS: Record<string, string> = {
   festival: "Event & Festival",
 };
 
+export const ROUTE_SCHEDULES: Record<number, { timeEst: string; duration: string; phase: string; recommendedHours: string }> = {
+  1: { timeEst: "08:00 - 08:45 WITA", duration: "45 Menit", phase: "Pagi", recommendedHours: "24 Jam (Check-in 14:00, Check-out 12:00)" },
+  2: { timeEst: "09:00 - 09:45 WITA", duration: "45 Menit", phase: "Pagi", recommendedHours: "08:00 - 18:00 WITA" },
+  3: { timeEst: "10:00 - 10:45 WITA", duration: "45 Menit", phase: "Pagi", recommendedHours: "08:00 - 17:00 WITA" },
+  4: { timeEst: "11:00 - 11:45 WITA", duration: "45 Menit", phase: "Pagi", recommendedHours: "09:00 - 17:00 WITA" },
+  5: { timeEst: "12:00 - 12:45 WITA", duration: "45 Menit", phase: "Siang", recommendedHours: "09:00 - 17:00 WITA" },
+  6: { timeEst: "13:00 - 13:30 WITA", duration: "30 Menit", phase: "Siang", recommendedHours: "09:00 - 18:00 WITA" },
+  7: { timeEst: "13:45 - 15:00 WITA", duration: "75 Menit", phase: "Siang", recommendedHours: "10:00 - 21:00 WITA" },
+  8: { timeEst: "15:15 - 16:00 WITA", duration: "45 Menit", phase: "Sore", recommendedHours: "24 Jam (Setiap Hari)" },
+  9: { timeEst: "16:15 - 17:00 WITA", duration: "45 Menit", phase: "Sore", recommendedHours: "06:00 - 18:00 WITA" },
+  10: { timeEst: "17:15 - 18:15 WITA", duration: "60 Menit", phase: "Sore", recommendedHours: "07:00 - 18:00 WITA" },
+  11: { timeEst: "18:30 - 19:15 WITA", duration: "45 Menit", phase: "Malam", recommendedHours: "08:00 - 20:00 WITA" },
+  12: { timeEst: "19:30 - 20:30 WITA", duration: "60 Menit", phase: "Malam", recommendedHours: "19:00 - 21:00 WITA (Jadwal Pertunjukan)" },
+};
+
 export const OFFICIAL_DESTINATIONS: Destination[] = [
   {
     id: "homestay-wayan-rutawan",
@@ -76,7 +91,7 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     description: "Pura Desa lan Puseh merupakan bagian penting dari kehidupan spiritual masyarakat Hindu Bali. Pura ini memiliki nilai religius, budaya, dan sejarah yang erat kaitannya dengan kehidupan masyarakat adat Sukawati.",
     address: "Desa Sukawati, Gianyar, Bali",
     maps_url: null,
-    opening_hours: "08:00 - 18:00 WITA (Gunakan pakaian adat/kain)",
+    opening_hours: "08:00 - 18:00 WITA",
     price: "Donasi sukarela",
     contact: null,
     instagram: null,
@@ -125,7 +140,7 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     description: "Sukawati memiliki ruang pengembangan seni bagi generasi muda melalui beberapa sanggar:\n• Sanggar Tari Ciwa Nataraja – Pradnya Larasari\n• Ganapati Art Studio – Wayan Gede Aditya Pratita\n• Sanggar Vokal Anak-Anak Crescendo – Komang Darmayuda, S.Sn., M.Si., Banjar Tameng\n\nBerbagai kegiatan seperti latihan tari, seni rupa, dan vokal menjadi wadah untuk mengembangkan kreativitas sekaligus melestarikan seni budaya Bali.",
     address: "Banjar Tameng & Desa Sukawati, Gianyar, Bali",
     maps_url: null,
-    opening_hours: "Sore hari sesuai jadwal latihan",
+    opening_hours: "09:00 - 17:00 WITA",
     price: "Sesuai program kelas / pertunjukan",
     contact: null,
     instagram: null,
@@ -295,7 +310,7 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     description: "Puri Ageng Sukawati merupakan salah satu tempat yang memiliki keterkaitan dengan sejarah Kerajaan Sukawati. Destinasi ini menjadi bagian dari warisan sejarah dan budaya yang memperkenalkan perjalanan kerajaan serta kehidupan tradisional masyarakat Bali.",
     address: "Banjar Mudita, Desa Sukawati, Gianyar, Bali",
     maps_url: null,
-    opening_hours: "08:00 - 17:00 WITA",
+    opening_hours: "08:00 - 20:00 WITA",
     price: "Donasi pelestarian cagar budaya",
     contact: null,
     instagram: null,
@@ -319,7 +334,7 @@ export const OFFICIAL_DESTINATIONS: Destination[] = [
     description: "Akhiri perjalanan dengan menyaksikan keindahan seni pertunjukan Bali melalui Tari Kecak dan Tari Legong. Gerakan tari, iringan musik, kostum, dan ekspresi para penari menghadirkan pengalaman budaya yang kaya akan nilai tradisi.",
     address: "Pura Penataran Agung Sukawati, Desa Sukawati, Gianyar, Bali",
     maps_url: null,
-    opening_hours: "Sesuai jadwal pertunjukan (biasanya sore/malam hari)",
+    opening_hours: "19:00 - 21:00 WITA (Jadwal Pertunjukan)",
     price: "Sesuai tiket pertunjukan",
     contact: null,
     instagram: null,
@@ -344,40 +359,20 @@ export function getYouTubeEmbedUrl(url?: string | null): string | null {
 
 export async function fetchDestinations(all = false) {
   try {
-    let q = supabase.from("destinations").select("*").order("sort_order");
+    let q = supabase.from("destinations").select("*").order("sort_order", { ascending: true });
     if (!all) q = q.eq("is_published", true);
     const { data, error } = await q;
 
     if (!error && data && data.length > 0) {
-      // Periksa apakah database sudah dimigrasi ke 12 destinasi resmi yang baru
-      const hasOfficial = data.some(d => d.slug === "homestay-wayan-rutawan" || d.slug === "dsanga-bistro-pool-space");
-      if (hasOfficial) {
-        return (data as Destination[]).map(d => {
-          const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === d.slug);
-          return {
-            ...d,
-            gallery_urls: (d.gallery_urls && d.gallery_urls.length > 0) ? d.gallery_urls : (officialMatch?.gallery_urls || []),
-          };
-        });
-      }
-
-      // Jika database masih menyimpan data lama (yang beberapa fotonya kosong),
-      // sinkronkan dengan OFFICIAL_DESTINATIONS agar data selalu lengkap dan konsisten
-      return OFFICIAL_DESTINATIONS.map(official => {
-        const match = data.find(d => 
-          d.slug === official.slug || 
-          d.name.toLowerCase().includes(official.name.toLowerCase().slice(0, 8))
-        );
-        if (match) {
-          return {
-            ...official,
-            id: match.id || official.id,
-            photo_url: match.photo_url || official.photo_url,
-            video_url: match.video_url || official.video_url,
-            gallery_urls: (match.gallery_urls && match.gallery_urls.length > 0) ? match.gallery_urls : official.gallery_urls,
-          };
-        }
-        return official;
+      // Sort strictly by sort_order
+      const sorted = [...data].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      return (sorted as Destination[]).map(d => {
+        const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === d.slug);
+        return {
+          ...d,
+          photo_url: d.photo_url || officialMatch?.photo_url || null,
+          gallery_urls: (d.gallery_urls && d.gallery_urls.length > 0) ? d.gallery_urls : (officialMatch?.gallery_urls || []),
+        };
       });
     }
 

@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
-import { supabase, fetchDestinations, fetchSetting, GROUPS, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff, Images, ChevronLeft, ChevronRight, Star, Clock } from "lucide-react";
+import { supabase, fetchDestinations, fetchSetting, GROUPS, ROUTE_SCHEDULES, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
+import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff, Images, ChevronLeft, ChevronRight, Star, Clock, Compass, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -261,48 +261,85 @@ function Dashboard({ email }: { email: string }) {
       {/* Konten Tab Destinasi */}
       {tab === "destinasi" && (
         <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-neutral-800">Daftar Destinasi & Kategori</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-neutral-800">Daftar Destinasi & Alur Rute Wisata</h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Urutan 1 s/d 12 tersinkronisasi otomatis dengan Denah Peta dan Jadwal Kunjungan Tur.
+              </p>
+            </div>
             <button className={btn} onClick={() => setEditing({ ...empty })}>+ Tambah Destinasi</button>
           </div>
+
           <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-            {data.map((d) => (
-              <div key={d.id} className="flex items-center gap-4 p-4 hover:bg-neutral-50/60 transition-colors">
-                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted relative">
-                  {d.photo_url ? (
-                    <img src={d.photo_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">No image</div>
-                  )}
-                  {d.video_url && (
-                    <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-white rounded p-0.5 shadow-sm" title="Memiliki Video">
-                      <Play className="w-2.5 h-2.5 fill-white" />
+            {[...data]
+              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+              .map((d) => {
+                const schedule = ROUTE_SCHEDULES[d.sort_order];
+                return (
+                  <div key={d.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-neutral-50/60 transition-colors">
+                    {/* Badge Nomor Urutan Rute & Thumbnail */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-700 text-white font-extrabold text-sm flex items-center justify-center shadow-xs shrink-0" title={`Titik Rute #${d.sort_order}`}>
+                        #{d.sort_order}
+                      </div>
+
+                      <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted relative">
+                        {d.photo_url ? (
+                          <img src={d.photo_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-400 text-xs">No image</div>
+                        )}
+                        {d.video_url && (
+                          <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-white rounded p-0.5 shadow-sm" title="Memiliki Video">
+                            <Play className="w-2.5 h-2.5 fill-white" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-neutral-900 truncate">{d.name}</p>
-                    {!d.is_published && <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0">(draf)</span>}
-                    {d.video_url && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
-                        <Film className="w-3 h-3" /> Ada Video
-                      </span>
-                    )}
-                    {(d.gallery_urls?.length ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
-                        <Images className="w-3 h-3" /> {d.gallery_urls?.length} Foto
-                      </span>
-                    )}
+
+                    {/* Informasi Utama & Jadwal Terhubung */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-bold text-neutral-900 truncate">{d.name}</p>
+                        {!d.is_published && <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0 font-medium">(draf)</span>}
+                        {schedule && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full shrink-0">
+                            Fase {schedule.phase}
+                          </span>
+                        )}
+                        {d.video_url && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
+                            <Film className="w-3 h-3" /> Ada Video
+                          </span>
+                        )}
+                        {(d.gallery_urls?.length ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full shrink-0 font-medium">
+                            <Images className="w-3 h-3" /> {d.gallery_urls?.length} Foto
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-neutral-600">
+                        <span className="text-neutral-500 font-medium">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</span>
+                        <span className="text-neutral-300 hidden sm:inline">•</span>
+                        <span className="inline-flex items-center gap-1 text-emerald-800 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                          <Clock className="w-3 h-3 text-emerald-600" />
+                          <span>Jadwal Tur: {schedule?.timeEst ?? "-"}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
+                          <span>Jam Buka: {d.opening_hours || "Belum diatur"}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
+                      <button className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer" onClick={() => setEditing(d)}>Ubah</button>
+                      <button className="text-sm font-semibold text-destructive hover:underline cursor-pointer" onClick={() => remove(d)}>Hapus</button>
+                    </div>
                   </div>
-                  <p className="text-xs text-neutral-500 mt-0.5 truncate">{GROUPS[d.group_type] ?? d.group_type} · {d.category}</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <button className="text-sm font-medium text-emerald-600 hover:underline cursor-pointer" onClick={() => setEditing(d)}>Ubah</button>
-                  <button className="text-sm font-medium text-destructive hover:underline cursor-pointer" onClick={() => remove(d)}>Hapus</button>
-                </div>
-              </div>
-            ))}
+                );
+              })}
             {data.length === 0 && (
               <div className="py-12 text-center text-sm text-neutral-500">Belum ada destinasi yang ditambahkan.</div>
             )}
@@ -1355,6 +1392,28 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
               )}
             </div>
 
+            {/* Rekomendasi Terhubung dengan Rute */}
+            {f.sort_order && ROUTE_SCHEDULES[f.sort_order] && (
+              <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Terhubung dengan Titik Rute #{f.sort_order} (Jadwal Tur: {ROUTE_SCHEDULES[f.sort_order].timeEst})</span>
+                  </span>
+                  <span className="text-[11px] text-emerald-700 mt-0.5 block">
+                    Rekomendasi Jam Buka: <strong>{ROUTE_SCHEDULES[f.sort_order].recommendedHours}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handlePresetSelect(ROUTE_SCHEDULES[f.sort_order!].recommendedHours)}
+                  className="self-start sm:self-auto text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs shrink-0"
+                >
+                  Terapkan Jam Rekomendasi Rute
+                </button>
+              </div>
+            )}
+
             {/* Pilihan Cepat Jam Populer */}
             <div>
               <span className="text-[11px] font-medium text-neutral-500 block mb-1.5">
@@ -1789,15 +1848,59 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
           </div>
         </div>
 
-        <div className="flex items-center gap-6 text-xs text-neutral-700 pt-2">
-          <label className="flex items-center gap-2 cursor-pointer font-medium">
-            <input type="checkbox" checked={!!f.is_published} onChange={(e) => set("is_published", e.target.checked)} className="rounded" />
-            Tampilkan di website publik
-          </label>
-          <label className="flex items-center gap-2 font-medium">
-            Urutan Tampil
-            <input type="number" className={`${input} w-20 py-1`} value={f.sort_order ?? 0} onChange={(e) => set("sort_order", Number(e.target.value))} />
-          </label>
+        {/* ── URUTAN RUTE WISATA & PUBLIKASI ── */}
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-neutral-800">
+                <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Urutan Titik Rute Denah (1 s/d 12)</span>
+              </label>
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                Menentukan urutan tampilan pada Denah Interaktif dan Katalog Daya Tarik.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-600 font-medium">Titik ke:</span>
+              <input 
+                type="number" 
+                min={1} 
+                max={12} 
+                className={`${input} w-20 py-1 text-center font-bold text-emerald-800`} 
+                value={f.sort_order ?? 1} 
+                onChange={(e) => set("sort_order", Number(e.target.value))} 
+              />
+            </div>
+          </div>
+
+          {/* Tombol Cepat Pilihan Titik #1 s/d #12 */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
+              const isSelected = (f.sort_order ?? 1) === num;
+              return (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => set("sort_order", num)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                    isSelected
+                      ? "bg-emerald-700 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-400/30"
+                      : "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100 hover:border-emerald-400"
+                  }`}
+                >
+                  #{num}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pt-2 border-t border-neutral-200 flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-xs text-neutral-800">
+              <input type="checkbox" checked={!!f.is_published} onChange={(e) => set("is_published", e.target.checked)} className="rounded text-emerald-600 focus:ring-emerald-500" />
+              <span>Publikasikan dan tampilkan di website publik</span>
+            </label>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border">

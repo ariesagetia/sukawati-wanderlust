@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { SiteChrome } from "@/components/SiteChrome";
-import { fetchDestinations, GROUPS } from "@/lib/supabase";
-import { ChevronRight, Play, Sparkles } from "lucide-react";
+import { fetchDestinations, GROUPS, ROUTE_SCHEDULES } from "@/lib/supabase";
+import { ChevronRight, Play, Sparkles, MapPin, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/destinasi/")({
   head: () => ({
@@ -89,8 +89,14 @@ export function DestinasiIndex() {
                 )}
                 
                 {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/15" />
                 
+                {/* Badge Nomor Rute (Urutan 1 s/d 12) */}
+                <div className="absolute top-4 left-4 bg-emerald-700/95 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1.5 border border-emerald-500/40">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Titik Rute #{d.sort_order}</span>
+                </div>
+
                 {/* Video badge */}
                 {d.video_url && (
                   <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 text-white text-[11px] font-medium flex items-center gap-1.5 border border-white/20 shadow-sm">
@@ -99,14 +105,27 @@ export function DestinasiIndex() {
                   </div>
                 )}
 
-                <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
-                  <div className="flex flex-col gap-1 drop-shadow-md">
+                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3">
+                  <div className="flex flex-col gap-1 drop-shadow-md min-w-0">
                     <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wider">
                       {GROUPS[d.group_type] ?? d.group_type}
                     </span>
                     <h3 className="text-white text-lg font-bold leading-tight">
                       {d.name}
                     </h3>
+                    
+                    {/* Jam Terhubung: Jadwal Tur Rute & Jam Buka Operasional */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px]">
+                      <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-xs text-emerald-200 px-2 py-0.5 rounded-md border border-white/10">
+                        <Clock className="w-3 h-3 text-emerald-400" />
+                        <span>Tur: {ROUTE_SCHEDULES[d.sort_order]?.timeEst ?? "-"}</span>
+                      </span>
+                      {d.opening_hours && (
+                        <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-xs text-neutral-300 px-2 py-0.5 rounded-md border border-white/10 truncate max-w-[180px]" title={d.opening_hours}>
+                          <span>Buka: {d.opening_hours}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="h-10 w-10 shrink-0 rounded-full border border-white/80 text-white flex items-center justify-center transition-all group-hover:bg-white group-hover:text-black">
                     <ChevronRight className="w-5 h-5" />

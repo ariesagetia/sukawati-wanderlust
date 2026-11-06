@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { SiteChrome } from "@/components/SiteChrome";
-import { fetchDestination, getYouTubeEmbedUrl } from "@/lib/supabase";
-import { MapPin, Clock, Phone, Tag, Instagram, ExternalLink, ArrowLeft, Play, Images, Camera, ChevronLeft, ChevronRight, X, Maximize2 } from "lucide-react";
+import { fetchDestination, getYouTubeEmbedUrl, ROUTE_SCHEDULES } from "@/lib/supabase";
+import { MapPin, Clock, Phone, Tag, Instagram, ExternalLink, ArrowLeft, Play, Images, Camera, ChevronLeft, ChevronRight, X, Maximize2, Compass } from "lucide-react";
 
 export const Route = createFileRoute("/destinasi/$slug")({
   head: ({ params }) => {
@@ -231,11 +231,48 @@ function Detail() {
             </div>
 
             {/* Sidebar info */}
-            <aside className="space-y-3">
+            <aside className="space-y-4">
+              {/* Kartu Integrasi Denah & Rute 1 Hari Penuh */}
+              {d.sort_order && ROUTE_SCHEDULES[d.sort_order] && (
+                <div className="bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white rounded-2xl border border-emerald-200/90 p-5 shadow-xs">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-white px-2.5 py-1 rounded-full border border-emerald-200 shadow-xs flex items-center gap-1.5">
+                      <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Titik Rute #{d.sort_order} dari 12</span>
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                      Fase {ROUTE_SCHEDULES[d.sort_order].phase}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 mt-3 text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-neutral-800 bg-white/80 p-2 rounded-xl border border-emerald-100">
+                      <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="text-[10px] text-neutral-400 block font-normal uppercase">Jadwal Tur Rute:</span>
+                        <span>{ROUTE_SCHEDULES[d.sort_order].timeEst} ({ROUTE_SCHEDULES[d.sort_order].duration})</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 leading-relaxed px-0.5">
+                      Terhubung langsung dengan alur wisata budaya Desa Sukawati.
+                    </p>
+                  </div>
+
+                  <Link
+                    to="/"
+                    hash="rute"
+                    className="mt-3.5 inline-flex items-center justify-center gap-1.5 w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-2 px-3 rounded-xl transition-colors text-xs shadow-xs"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Buka Titik Ini di Denah Peta</span>
+                  </Link>
+                </div>
+              )}
+
               <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
                 {/* Header sidebar */}
                 <div className="bg-emerald-600 px-5 py-4">
-                  <h3 className="text-white font-bold text-xs uppercase tracking-widest">Informasi</h3>
+                  <h3 className="text-white font-bold text-xs uppercase tracking-widest">Informasi Destinasi</h3>
                 </div>
 
                 {/* Info items */}

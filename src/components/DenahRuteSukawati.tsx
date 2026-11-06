@@ -847,6 +847,26 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                   {activePoint.name}
                 </h4>
 
+                {/* Jadwal Kunjungan & Jam Operasional Terhubung */}
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-neutral-50/90 border border-neutral-200/80 text-xs">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-emerald-600" /> Jadwal Tur Rute
+                    </span>
+                    <span className="font-bold text-neutral-900 text-xs mt-0.5">{activePoint.timeEst}</span>
+                    <span className="text-[10px] text-emerald-700 font-medium">Durasi: {activePoint.duration}</span>
+                  </div>
+                  <div className="flex flex-col border-l border-neutral-200 pl-2.5">
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                      <Sun className="w-3 h-3 text-amber-600" /> Jam Buka Lokasi
+                    </span>
+                    <span className="font-bold text-emerald-900 text-xs mt-0.5 truncate" title={destinationDetail?.opening_hours || "-"}>
+                      {destinationDetail?.opening_hours || "Sesuai Jadwal"}
+                    </span>
+                    <span className="text-[10px] text-neutral-500 font-medium">Terhubung dengan tur</span>
+                  </div>
+                </div>
+
                 {/* Aktivitas Pengunjung */}
                 <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-100/90 text-xs text-emerald-900 leading-relaxed">
                   <div className="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
@@ -924,7 +944,8 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPoints.map((pt) => {
-              const itemPhoto = destinations?.find((d) => d.slug === pt.slug)?.photo_url || 
+              const destItem = destinations?.find((d) => d.slug === pt.slug);
+              const itemPhoto = destItem?.photo_url || 
                 "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80";
               const isSelected = pt.step === activeStep;
 
@@ -945,10 +966,15 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                         {getPointIcon(pt.iconKey, "w-3 h-3 text-emerald-700")}
                         <span>Titik #{pt.step}</span>
                       </span>
-                      <span className="text-neutral-500 font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-emerald-600" />
-                        {pt.timeEst}
-                      </span>
+                      <div className="flex flex-col items-end text-right">
+                        <span className="text-neutral-800 font-bold flex items-center gap-1 text-[11px]">
+                          <Clock className="w-3 h-3 text-emerald-600" />
+                          {pt.timeEst}
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-medium">
+                          Buka: {destItem?.opening_hours || "Sesuai Jadwal"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Thumbnail */}
