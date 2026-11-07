@@ -1319,23 +1319,34 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
 
       setUploadStatus("Menyimpan ke database...");
       const targetSlug = f.slug || slugify(f.name ?? "");
-      const { id, tour_schedule, tour_duration, tour_phase, ...rest } = f as Destination;
-      const row = {
+      const { id, tour_schedule: _ts, tour_duration: _td, tour_phase: _tp, ...rest } = f as Destination;
+      const row: Record<string, unknown> = {
         ...rest,
         slug: targetSlug,
         photo_url,
         video_url,
         gallery_urls: finalGalleryUrls,
+        tour_schedule: tourSchedule || null,
+        tour_duration: tourDuration || "45 Menit",
+        tour_phase: tourPhase || "Pagi",
         updated_at: new Date().toISOString()
       };
-      delete (row as Record<string, unknown>)["created_at"];
-      delete (row as Record<string, unknown>)["tour_schedule"];
-      delete (row as Record<string, unknown>)["tour_duration"];
-      delete (row as Record<string, unknown>)["tour_phase"];
+      delete row["created_at"];
 
-      const res = id
+      // Coba simpan ke destinations (termasuk kolom tour_*)
+      let res = id
         ? await supabase.from("destinations").update(row).eq("id", id)
         : await supabase.from("destinations").insert(row);
+
+      // Jika kolom tour_* belum ada di tabel destinations Supabase (error 42703), simpan tanpa kolom tersebut
+      if (res.error && (res.error.code === "42703" || res.error.message.includes("tour_schedule") || res.error.message.includes("tour_duration") || res.error.message.includes("tour_phase"))) {
+        delete row["tour_schedule"];
+        delete row["tour_duration"];
+        delete row["tour_phase"];
+        res = id
+          ? await supabase.from("destinations").update(row).eq("id", id)
+          : await supabase.from("destinations").insert(row);
+      }
 
       if (res.error) {
         if (res.error.message.includes("gallery_urls") || res.error.code === "42703") {
@@ -1355,7 +1366,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
         throw res.error;
       }
 
-      // Simpan Jadwal Tur (Waktu, Durasi, dan Fase) ke pengaturan Supabase
+      // Simpan Jadwal Tur (Waktu, Durasi, dan Fase) ke pengaturan Supabase (public.settings)
       try {
         await saveDestinationTourSchedule(targetSlug, {
           timeEst: tourSchedule,
@@ -1363,7 +1374,7 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
           phase: tourPhase,
         });
       } catch (schedErr) {
-        console.warn("Gagal menyimpan tour_schedules:", schedErr);
+        console.warn("Gagal menyimpan tour_schedules ke settings:", schedErr);
       }
 
       onSaved();
