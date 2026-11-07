@@ -21,7 +21,8 @@ import {
   Users, 
   HeartHandshake, 
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -385,14 +386,27 @@ function Index() {
                   </div>
                 )}
 
-                <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
-                  <div className="flex flex-col gap-1 drop-shadow-md">
+                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3">
+                  <div className="flex flex-col gap-1 drop-shadow-md min-w-0">
                     <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wider">
                       {GROUPS[d.group_type] ?? d.group_type}
                     </span>
                     <h3 className="text-white text-lg font-bold leading-tight">
                       {d.name}
                     </h3>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px]">
+                      {d.tour_schedule && (
+                        <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-xs text-emerald-200 px-2 py-0.5 rounded-md border border-white/10">
+                          <Clock className="w-3 h-3 text-emerald-400" />
+                          <span>Tur: {d.tour_schedule}</span>
+                        </span>
+                      )}
+                      {d.opening_hours && (
+                        <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-xs text-neutral-300 px-2 py-0.5 rounded-md border border-white/10 truncate max-w-[160px]" title={d.opening_hours}>
+                          <span>Buka: {d.opening_hours}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="h-10 w-10 shrink-0 rounded-full border border-white/80 text-white flex items-center justify-center transition-all group-hover:bg-white group-hover:text-black">
                     <ChevronRight className="w-5 h-5" />

@@ -805,7 +805,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                 </span>
                 <span className="text-xs font-semibold text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded-full flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                  {activePoint.duration}
+                  {destinationDetail?.tour_duration || activePoint.duration}
                 </span>
               </div>
 
@@ -825,7 +825,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
 
                 {/* Badge Waktu Kunjungan */}
                 <div className="absolute bottom-3 right-3 bg-neutral-900/80 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/10">
-                  {activePoint.timeEst}
+                  {destinationDetail?.tour_schedule || activePoint.timeEst}
                 </div>
               </div>
 
@@ -836,7 +836,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                     {activePoint.category}
                   </span>
                   <span className="text-[11px] font-medium text-neutral-400">
-                    Fase {activePoint.phaseLabel}
+                    Fase {destinationDetail?.tour_phase || activePoint.phaseLabel}
                   </span>
                 </div>
 
@@ -853,8 +853,8 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
                       <Clock className="w-3 h-3 text-emerald-600" /> Jadwal Tur Rute
                     </span>
-                    <span className="font-bold text-neutral-900 text-xs mt-0.5">{activePoint.timeEst}</span>
-                    <span className="text-[10px] text-emerald-700 font-medium">Durasi: {activePoint.duration}</span>
+                    <span className="font-bold text-neutral-900 text-xs mt-0.5">{destinationDetail?.tour_schedule || activePoint.timeEst}</span>
+                    <span className="text-[10px] text-emerald-700 font-medium">Durasi: {destinationDetail?.tour_duration || activePoint.duration}</span>
                   </div>
                   <div className="flex flex-col border-l border-neutral-200 pl-2.5">
                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
@@ -969,7 +969,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                       <div className="flex flex-col items-end text-right">
                         <span className="text-neutral-800 font-bold flex items-center gap-1 text-[11px]">
                           <Clock className="w-3 h-3 text-emerald-600" />
-                          {pt.timeEst}
+                          {destItem?.tour_schedule || pt.timeEst}
                         </span>
                         <span className="text-[10px] text-neutral-500 font-medium">
                           Buka: {destItem?.opening_hours || "Sesuai Jadwal"}
@@ -1009,7 +1009,7 @@ export function DenahRuteSukawati({ destinations }: { destinations?: Destination
                       <span>Lihat Profil</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
-                    <span className="text-neutral-400 font-medium">{pt.duration}</span>
+                    <span className="text-neutral-400 font-medium">{destItem?.tour_duration || pt.duration}</span>
                   </div>
                 </div>
               );

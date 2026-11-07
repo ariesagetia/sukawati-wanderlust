@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { SiteChrome } from "@/components/SiteChrome";
-import { supabase, fetchDestinations, fetchSetting, GROUPS, ROUTE_SCHEDULES, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
+import { supabase, fetchDestinations, fetchSetting, GROUPS, ROUTE_SCHEDULES, saveDestinationTourSchedule, type Destination, getYouTubeEmbedUrl } from "@/lib/supabase";
 import { Shield, UserPlus, KeyRound, Trash2, Mail, CheckCircle2, AlertCircle, Copy, Check, Lock, RefreshCw, X, Video, Play, Film, Image as ImageIcon, Eye, EyeOff, Images, ChevronLeft, ChevronRight, Star, Clock, Compass, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -276,6 +276,8 @@ function Dashboard({ email }: { email: string }) {
               .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
               .map((d) => {
                 const schedule = ROUTE_SCHEDULES[d.sort_order];
+                const tourScheduleDisplay = d.tour_schedule || schedule?.timeEst || "Belum diatur";
+                const tourPhaseDisplay = d.tour_phase || schedule?.phase;
                 return (
                   <div key={d.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-neutral-50/60 transition-colors">
                     {/* Badge Nomor Urutan Rute & Thumbnail */}
@@ -303,9 +305,9 @@ function Dashboard({ email }: { email: string }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-bold text-neutral-900 truncate">{d.name}</p>
                         {!d.is_published && <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0 font-medium">(draf)</span>}
-                        {schedule && (
+                        {tourPhaseDisplay && (
                           <span className="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full shrink-0">
-                            Fase {schedule.phase}
+                            Fase {tourPhaseDisplay}
                           </span>
                         )}
                         {d.video_url && (
@@ -325,7 +327,7 @@ function Dashboard({ email }: { email: string }) {
                         <span className="text-neutral-300 hidden sm:inline">•</span>
                         <span className="inline-flex items-center gap-1 text-emerald-800 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                           <Clock className="w-3 h-3 text-emerald-600" />
-                          <span>Jadwal Tur: {schedule?.timeEst ?? "-"}</span>
+                          <span>Jadwal Tur: {tourScheduleDisplay}</span>
                         </span>
                         <span className="inline-flex items-center gap-1 text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
                           <span>Jam Buka: {d.opening_hours || "Belum diatur"}</span>
@@ -1095,7 +1097,18 @@ const PRESET_HOURS = [
 function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState<Partial<Destination>>(value);
   
-  // State Pilihan Jam Buka
+  // State Jadwal Tur Rute (Dapat diubah bebas oleh admin untuk destinasi mana pun)
+  const [tourSchedule, setTourSchedule] = useState(() => {
+    return value.tour_schedule || ROUTE_SCHEDULES[value.sort_order ?? 1]?.timeEst || "";
+  });
+  const [tourDuration, setTourDuration] = useState(() => {
+    return value.tour_duration || ROUTE_SCHEDULES[value.sort_order ?? 1]?.duration || "45 Menit";
+  });
+  const [tourPhase, setTourPhase] = useState(() => {
+    return value.tour_phase || ROUTE_SCHEDULES[value.sort_order ?? 1]?.phase || "Pagi";
+  });
+
+  // State Pilihan Jam Buka Operasional Lokasi
   const [openTime, setOpenTime] = useState(() => {
     const match = (value.opening_hours ?? "").match(/(\d{2}:\d{2})\s*[-–]\s*(\d{2}:\d{2})/);
     return match ? match[1] : "08:00";
@@ -1305,16 +1318,20 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
       }
 
       setUploadStatus("Menyimpan ke database...");
-      const { id, ...rest } = f as Destination;
+      const targetSlug = f.slug || slugify(f.name ?? "");
+      const { id, tour_schedule, tour_duration, tour_phase, ...rest } = f as Destination;
       const row = {
         ...rest,
-        slug: f.slug || slugify(f.name ?? ""),
+        slug: targetSlug,
         photo_url,
         video_url,
         gallery_urls: finalGalleryUrls,
         updated_at: new Date().toISOString()
       };
       delete (row as Record<string, unknown>)["created_at"];
+      delete (row as Record<string, unknown>)["tour_schedule"];
+      delete (row as Record<string, unknown>)["tour_duration"];
+      delete (row as Record<string, unknown>)["tour_phase"];
 
       const res = id
         ? await supabase.from("destinations").update(row).eq("id", id)
@@ -1337,6 +1354,18 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
         }
         throw res.error;
       }
+
+      // Simpan Jadwal Tur (Waktu, Durasi, dan Fase) ke pengaturan Supabase
+      try {
+        await saveDestinationTourSchedule(targetSlug, {
+          timeEst: tourSchedule,
+          duration: tourDuration,
+          phase: tourPhase,
+        });
+      } catch (schedErr) {
+        console.warn("Gagal menyimpan tour_schedules:", schedErr);
+      }
+
       onSaved();
     } catch (err) {
       alert((err as Error).message);
@@ -1378,41 +1407,113 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
           {field("address", "Alamat")}
           {field("maps_url", "Tautan Google Maps")}
 
-          {/* ── PILIHAN JAM BUKA & OPERASIONAL ── */}
+          {/* ── 1. PENGATURAN JADWAL KUNJUNGAN TUR (DAPAT DIUBAH BEBAS OLEH ADMIN) ── */}
+          <div className="col-span-1 sm:col-span-2 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 space-y-3.5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-emerald-200/80">
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                  <Compass className="w-4 h-4 text-emerald-700" />
+                  <span>Jadwal Kunjungan Tur (Alur Rute Perjalanan)</span>
+                </label>
+                <p className="text-[11px] text-emerald-800 mt-0.5">
+                  Waktu singgah yang tampil pada Denah Peta &amp; Garis Waktu. <strong>Dapat Anda ubah atau tentukan bebas</strong> untuk destinasi mana pun.
+                </p>
+              </div>
+              {f.sort_order && f.sort_order <= 12 && ROUTE_SCHEDULES[f.sort_order] && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const s = ROUTE_SCHEDULES[f.sort_order!];
+                    setTourSchedule(s.timeEst);
+                    setTourDuration(s.duration);
+                    setTourPhase(s.phase);
+                  }}
+                  className="text-[11px] font-semibold bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-md transition-colors cursor-pointer shrink-0 shadow-xs"
+                  title="Isi otomatis dengan jadwal standar bawaan rute"
+                >
+                  Gunakan Standar Rute #{f.sort_order} ({ROUTE_SCHEDULES[f.sort_order].timeEst})
+                </button>
+              )}
+              {f.sort_order && f.sort_order > 12 && (
+                <span className="text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full shrink-0">
+                  ✨ Destinasi Baru (Titik #{f.sort_order})
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Input Jam Kunjungan Tur */}
+              <div className="sm:col-span-1">
+                <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                  Jam Kunjungan Tur:
+                </label>
+                <input
+                  className={`${input} py-1.5 text-xs bg-white font-semibold text-emerald-900`}
+                  value={tourSchedule}
+                  onChange={(e) => setTourSchedule(e.target.value)}
+                  placeholder="Contoh: 09:00 - 09:45 WITA"
+                />
+                <span className="text-[10px] text-neutral-500 mt-0.5 block">
+                  Format bebas (misal: 09:00 - 09:45 WITA)
+                </span>
+              </div>
+
+              {/* Input Durasi */}
+              <div>
+                <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                  Durasi Kunjungan:
+                </label>
+                <select
+                  className={`${input} py-1.5 text-xs bg-white`}
+                  value={tourDuration}
+                  onChange={(e) => setTourDuration(e.target.value)}
+                >
+                  <option value="30 Menit">30 Menit</option>
+                  <option value="45 Menit">45 Menit</option>
+                  <option value="60 Menit">60 Menit (1 Jam)</option>
+                  <option value="75 Menit">75 Menit</option>
+                  <option value="90 Menit">90 Menit (1.5 Jam)</option>
+                  <option value="120 Menit">120 Menit (2 Jam)</option>
+                </select>
+              </div>
+
+              {/* Input Fase Waktu */}
+              <div>
+                <label className="block text-[11px] font-bold text-neutral-700 mb-1">
+                  Fase Waktu:
+                </label>
+                <select
+                  className={`${input} py-1.5 text-xs bg-white`}
+                  value={tourPhase}
+                  onChange={(e) => setTourPhase(e.target.value)}
+                >
+                  <option value="Pagi">Pagi Hari (06:00 - 11:45)</option>
+                  <option value="Siang">Siang Hari (12:00 - 15:00)</option>
+                  <option value="Sore">Sore Hari (15:15 - 18:15)</option>
+                  <option value="Malam">Malam Hari (18:30 - 21:00)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 2. PILIHAN JAM BUKA & OPERASIONAL LOKASI (TEMPAT ASLI) ── */}
           <div className="col-span-1 sm:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50/70 p-3.5 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-neutral-800">
-                <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Pilihan Jam Buka & Operasional</span>
-              </label>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-neutral-800">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Jam Buka Operasional Lokasi (Tempat Asli)</span>
+                </label>
+                <p className="text-[10px] text-neutral-500 mt-0.5">
+                  Jam buka tempat sebenarnya (kapan lokasi ini melayani kunjungan wisatawan).
+                </p>
+              </div>
               {f.opening_hours && (
                 <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
                   {f.opening_hours}
                 </span>
               )}
             </div>
-
-            {/* Rekomendasi Terhubung dengan Rute */}
-            {f.sort_order && ROUTE_SCHEDULES[f.sort_order] && (
-              <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                <div>
-                  <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Terhubung dengan Titik Rute #{f.sort_order} (Jadwal Tur: {ROUTE_SCHEDULES[f.sort_order].timeEst})</span>
-                  </span>
-                  <span className="text-[11px] text-emerald-700 mt-0.5 block">
-                    Rekomendasi Jam Buka: <strong>{ROUTE_SCHEDULES[f.sort_order].recommendedHours}</strong>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handlePresetSelect(ROUTE_SCHEDULES[f.sort_order!].recommendedHours)}
-                  className="self-start sm:self-auto text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs shrink-0"
-                >
-                  Terapkan Jam Rekomendasi Rute
-                </button>
-              </div>
-            )}
 
             {/* Pilihan Cepat Jam Populer */}
             <div>
@@ -1854,10 +1955,10 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
             <div>
               <label className="flex items-center gap-1.5 text-xs font-bold text-neutral-800">
                 <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Urutan Titik Rute Denah (1 s/d 12)</span>
+                <span>Urutan Titik Rute Denah</span>
               </label>
               <p className="text-[11px] text-neutral-500 mt-0.5">
-                Menentukan urutan tampilan pada Denah Interaktif dan Katalog Daya Tarik.
+                Menentukan urutan pada Denah Interaktif dan Katalog. Bebas untuk titik #1 - #12, maupun titik baru di atas #12.
               </p>
             </div>
 
@@ -1866,23 +1967,39 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
               <input 
                 type="number" 
                 min={1} 
-                max={12} 
-                className={`${input} w-20 py-1 text-center font-bold text-emerald-800`} 
+                className={`${input} w-24 py-1 text-center font-bold text-emerald-800`} 
                 value={f.sort_order ?? 1} 
-                onChange={(e) => set("sort_order", Number(e.target.value))} 
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  set("sort_order", val);
+                  if (val <= 12 && ROUTE_SCHEDULES[val]) {
+                    const s = ROUTE_SCHEDULES[val];
+                    setTourSchedule(s.timeEst);
+                    setTourDuration(s.duration);
+                    setTourPhase(s.phase);
+                  }
+                }} 
               />
             </div>
           </div>
 
-          {/* Tombol Cepat Pilihan Titik #1 s/d #12 */}
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          {/* Tombol Cepat Pilihan Titik #1 s/d #12 & Titik Baru */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
             {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
               const isSelected = (f.sort_order ?? 1) === num;
               return (
                 <button
                   key={num}
                   type="button"
-                  onClick={() => set("sort_order", num)}
+                  onClick={() => {
+                    set("sort_order", num);
+                    if (ROUTE_SCHEDULES[num]) {
+                      const s = ROUTE_SCHEDULES[num];
+                      setTourSchedule(s.timeEst);
+                      setTourDuration(s.duration);
+                      setTourPhase(s.phase);
+                    }
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
                     isSelected
                       ? "bg-emerald-700 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-400/30"
@@ -1893,6 +2010,11 @@ function Editor({ value, onClose, onSaved }: { value: Partial<Destination>; onCl
                 </button>
               );
             })}
+            {(f.sort_order ?? 1) > 12 && (
+              <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 text-white shadow-sm ring-2 ring-amber-400/30">
+                #{f.sort_order} (Destinasi Baru)
+              </span>
+            )}
           </div>
 
           <div className="pt-2 border-t border-neutral-200 flex items-center justify-between">

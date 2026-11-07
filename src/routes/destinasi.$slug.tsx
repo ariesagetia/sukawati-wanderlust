@@ -233,15 +233,15 @@ function Detail() {
             {/* Sidebar info */}
             <aside className="space-y-4">
               {/* Kartu Integrasi Denah & Rute 1 Hari Penuh */}
-              {d.sort_order && ROUTE_SCHEDULES[d.sort_order] && (
+              {(d.tour_schedule || (d.sort_order && ROUTE_SCHEDULES[d.sort_order])) && (
                 <div className="bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white rounded-2xl border border-emerald-200/90 p-5 shadow-xs">
                   <div className="flex items-center justify-between gap-2 mb-2.5">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-white px-2.5 py-1 rounded-full border border-emerald-200 shadow-xs flex items-center gap-1.5">
                       <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Titik Rute #{d.sort_order} dari 12</span>
+                      <span>Titik Rute #{d.sort_order}</span>
                     </span>
                     <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                      Fase {ROUTE_SCHEDULES[d.sort_order].phase}
+                      Fase {d.tour_phase || ROUTE_SCHEDULES[d.sort_order]?.phase || "Tur"}
                     </span>
                   </div>
 
@@ -250,7 +250,9 @@ function Detail() {
                       <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <div>
                         <span className="text-[10px] text-neutral-400 block font-normal uppercase">Jadwal Tur Rute:</span>
-                        <span>{ROUTE_SCHEDULES[d.sort_order].timeEst} ({ROUTE_SCHEDULES[d.sort_order].duration})</span>
+                        <span>
+                          {d.tour_schedule || ROUTE_SCHEDULES[d.sort_order]?.timeEst} ({d.tour_duration || ROUTE_SCHEDULES[d.sort_order]?.duration || "45 Menit"})
+                        </span>
                       </div>
                     </div>
                     <p className="text-[11px] text-neutral-500 leading-relaxed px-0.5">

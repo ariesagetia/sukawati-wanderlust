@@ -118,7 +118,7 @@ export function DestinasiIndex() {
                     <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px]">
                       <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-xs text-emerald-200 px-2 py-0.5 rounded-md border border-white/10">
                         <Clock className="w-3 h-3 text-emerald-400" />
-                        <span>Tur: {ROUTE_SCHEDULES[d.sort_order]?.timeEst ?? "-"}</span>
+                        <span>Tur: {d.tour_schedule || ROUTE_SCHEDULES[d.sort_order]?.timeEst || "-"}</span>
                       </span>
                       {d.opening_hours && (
                         <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-xs text-neutral-300 px-2 py-0.5 rounded-md border border-white/10 truncate max-w-[180px]" title={d.opening_hours}>

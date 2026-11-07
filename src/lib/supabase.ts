@@ -18,6 +18,9 @@ export type Destination = {
   address: string | null;
   maps_url: string | null;
   opening_hours: string | null;
+  tour_schedule?: string | null;
+  tour_duration?: string | null;
+  tour_phase?: string | null;
   price: string | null;
   contact: string | null;
   instagram: string | null;
@@ -357,26 +360,81 @@ export function getYouTubeEmbedUrl(url?: string | null): string | null {
   return match && match[1] ? `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0` : null;
 }
 
+export async function fetchTourSchedules(): Promise<Record<string, { timeEst?: string; duration?: string; phase?: string }>> {
+  try {
+    const { data } = await supabase.from("settings").select("value").eq("key", "tour_schedules").maybeSingle();
+    if (data?.value) {
+      return JSON.parse(data.value);
+    }
+  } catch (err) {
+    console.warn("fetchTourSchedules error:", err);
+  }
+  return {};
+}
+
+export async function saveDestinationTourSchedule(
+  slugOrId: string, 
+  schedule: { timeEst?: string | null; duration?: string | null; phase?: string | null }
+) {
+  try {
+    const current = await fetchTourSchedules();
+    current[slugOrId] = {
+      timeEst: schedule.timeEst || "",
+      duration: schedule.duration || "45 Menit",
+      phase: schedule.phase || "Pagi",
+    };
+    return await supabase.from("settings").upsert({
+      key: "tour_schedules",
+      value: JSON.stringify(current),
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("saveDestinationTourSchedule error:", err);
+    throw err;
+  }
+}
+
 export async function fetchDestinations(all = false) {
   try {
     let q = supabase.from("destinations").select("*").order("sort_order", { ascending: true });
     if (!all) q = q.eq("is_published", true);
-    const { data, error } = await q;
+    
+    // Ambil daftar destinasi dan pengaturan jadwal tur sekaligus
+    const [destResult, customSchedules] = await Promise.all([
+      q,
+      fetchTourSchedules(),
+    ]);
 
-    if (!error && data && data.length > 0) {
-      // Sort strictly by sort_order
+    const data = destResult.data;
+    if (!destResult.error && data && data.length > 0) {
+      // Urutkan berdasarkan sort_order
       const sorted = [...data].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
       return (sorted as Destination[]).map(d => {
         const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === d.slug);
+        const custom = customSchedules[d.slug] || customSchedules[d.id];
+        const defaultSched = ROUTE_SCHEDULES[d.sort_order];
+
         return {
           ...d,
           photo_url: d.photo_url || officialMatch?.photo_url || null,
           gallery_urls: (d.gallery_urls && d.gallery_urls.length > 0) ? d.gallery_urls : (officialMatch?.gallery_urls || []),
+          tour_schedule: custom?.timeEst || (d as any).tour_schedule || defaultSched?.timeEst || null,
+          tour_duration: custom?.duration || (d as any).tour_duration || defaultSched?.duration || "45 Menit",
+          tour_phase: custom?.phase || (d as any).tour_phase || defaultSched?.phase || "Pagi",
         };
       });
     }
 
-    return OFFICIAL_DESTINATIONS;
+    return OFFICIAL_DESTINATIONS.map(d => {
+      const custom = customSchedules[d.slug] || customSchedules[d.id];
+      const defaultSched = ROUTE_SCHEDULES[d.sort_order];
+      return {
+        ...d,
+        tour_schedule: custom?.timeEst || defaultSched?.timeEst || null,
+        tour_duration: custom?.duration || defaultSched?.duration || "45 Menit",
+        tour_phase: custom?.phase || defaultSched?.phase || "Pagi",
+      };
+    });
   } catch (err) {
     console.warn("fetchDestinations exception, using official list:", err);
     return OFFICIAL_DESTINATIONS;
@@ -385,20 +443,31 @@ export async function fetchDestinations(all = false) {
 
 export async function fetchDestination(slug: string) {
   try {
-    const { data, error } = await supabase.from("destinations").select("*").eq("slug", slug).maybeSingle();
+    const [destResult, customSchedules] = await Promise.all([
+      supabase.from("destinations").select("*").eq("slug", slug).maybeSingle(),
+      fetchTourSchedules(),
+    ]);
+
+    const data = destResult.data;
     if (data) {
       // Pastikan jika photo_url di db kosong, gunakan fallback photo resmi
       const officialMatch = OFFICIAL_DESTINATIONS.find(o => o.slug === slug);
       const gallery = (data.gallery_urls && Array.isArray(data.gallery_urls) && data.gallery_urls.length > 0)
         ? data.gallery_urls
         : (officialMatch?.gallery_urls || []);
+      const custom = customSchedules[slug] || customSchedules[data.id];
+      const defaultSched = ROUTE_SCHEDULES[data.sort_order];
+
       return {
         ...data,
         photo_url: data.photo_url || officialMatch?.photo_url || null,
         gallery_urls: gallery,
+        tour_schedule: custom?.timeEst || (data as any).tour_schedule || defaultSched?.timeEst || null,
+        tour_duration: custom?.duration || (data as any).tour_duration || defaultSched?.duration || "45 Menit",
+        tour_phase: custom?.phase || (data as any).tour_phase || defaultSched?.phase || "Pagi",
       } as Destination;
     }
-    if (error) console.warn("Supabase fetchDestination error:", error);
+    if (destResult.error) console.warn("Supabase fetchDestination error:", destResult.error);
   } catch (err) {
     console.warn("fetchDestination exception:", err);
   }
