@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSetting, fetchDestinations } from "@/lib/supabase";
-import { Mail, MapPin, Compass, Sparkles } from "lucide-react";
+import { Mail, MapPin, Compass } from "lucide-react";
 
 // Custom SVG icon for WhatsApp
 const WhatsAppIcon = () => (
@@ -38,9 +38,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-2 group">
             <span className="text-lg md:text-xl font-bold tracking-tight text-emerald-700 transition-colors group-hover:text-emerald-800">
               DESA WISATA <span className="font-light text-neutral-900">SUKAWATI</span>
-            </span>
-            <span className="hidden lg:inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
-              <Sparkles className="w-3 h-3 text-emerald-600" /> Budaya Bali
             </span>
           </Link>
           <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-semibold text-neutral-600">
